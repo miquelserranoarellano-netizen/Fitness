@@ -12,7 +12,8 @@ guardan las comidas y qué parte del código hace cada cosa. El plan completo es
 | `src/integrations/nutrition/` | Guarda, lee, corrige y borra las comidas (`food_entries` y `food_entry_items`) |
 | `src/data/favorites.ts`, `daily.ts`, `settings.ts` | Favoritas, agua y pasos de cada día, y ajustes (objetivos de pasos y agua, calorías sobrantes, recordatorios) |
 | `src/data/meal-photos.ts` | Fotos de las comidas en la carpeta privada de la app (se borran con la comida) |
-| `server/` (fase 4) | Reconoce los alimentos de una foto o un texto con Claude y busca sus cifras en USDA y Open Food Facts |
+| `../server/` | Reconoce los alimentos de una foto o un texto con Claude y busca sus cifras en USDA y Open Food Facts (ver `server/README.md`) |
+| `src/lib/api.ts`, `api-config.ts`, `photo-prep.ts` | Cliente del servidor: prepara la foto, hace la petición, valida la respuesta y la devuelve como `MealAnalysis`, cuyos alimentos ya encajan con el contrato de abajo |
 
 ## El contrato: una comida
 

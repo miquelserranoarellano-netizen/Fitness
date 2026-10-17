@@ -12,7 +12,7 @@ con rutina por reglas, modo entrenamiento, seguimiento de peso y medidas y revis
 | Carpeta | Contenido |
 | --- | --- |
 | [`app/`](app/) | La app (Expo SDK 57, Expo Router, SQLite en el teléfono). Normas en `app/CLAUDE.md` |
-| `server/` | Servidor para analizar fotos y textos de comida (llega en la fase 4) |
+| [`server/`](server/) | Servidor que analiza fotos y textos de comida con Claude y busca las cifras en USDA y Open Food Facts |
 | [`fusion/`](fusion/) | El encargo, los resúmenes de las dos apps de partida y el plan de fusión |
 
 ## Arrancar la app
@@ -27,3 +27,18 @@ npm run check    # tipos, lint y pruebas
 ```
 
 Más detalles (WSL, móvil en la misma wifi) en [`app/README.md`](app/README.md).
+
+## Arrancar el servidor
+
+Solo hace falta para registrar comida con foto, texto o código de barras.
+
+```bash
+cd server
+npm ci
+cp .env.example .env   # pon tu ANTHROPIC_API_KEY (sin ella solo funciona el código de barras)
+npm start              # escucha en el puerto 3000
+npm test
+```
+
+La app lo busca en el mismo ordenador, puerto 3000; para cambiarlo, `app/.env.example`. Detalles en
+[`server/README.md`](server/README.md).

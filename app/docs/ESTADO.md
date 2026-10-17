@@ -1,6 +1,6 @@
 # Estado de la app
 
-Última actualización: 17 de octubre de 2026 · Fusión con SnapCal en curso (fase 3 de 10 hecha).
+Última actualización: 17 de octubre de 2026 · Fusión con SnapCal en curso (fase 4 de 10 hecha).
 
 ## Fusión con SnapCal
 
@@ -9,7 +9,38 @@
 | 1 | Plan y decisiones (`../fusion/PLAN-FUSION.md`) | Hecha |
 | 2 | Base: tema claro/oscuro, sistema de traducciones, preferencias de tema e idioma (en «Más») | Hecha |
 | 3 | Migración 2 y capa de datos de nutrición (comidas con alimentos, favoritas, agua, pasos, ajustes, dieta) | Hecha |
-| 4-10 | Servidor, pantallas de comida, Inicio y Nutrición, cuestionario único, conexiones, agua y pasos, traducción | Pendientes |
+| 4 | Servidor (`../server/`) y cliente de la API (`src/lib/api.ts`, `api-config.ts`, `photo-prep.ts`) | Hecha |
+| 5-10 | Pantallas de comida, Inicio y Nutrición, cuestionario único, conexiones, agua y pasos, traducción | Pendientes |
+
+**Fase 4, comprobado (17/10/2026):** en `server/`, **29 pruebas** con `node --test` (rutas, errores, token, límite
+de peticiones, esquema y búsquedas, con un cliente de Anthropic y bases de datos falsos). En `app/`, `npm run
+check` con tipos, lint y **104 pruebas** (16 nuevas del cliente: peticiones, traducción de la respuesta, cada
+código de error, tiempo agotado, cancelación y dirección del servidor). `expo export` para Android compila. Con el
+servidor de verdad y sin clave: `/health` responde `{ ok: true, ai: false }`, el análisis de texto responde `503
+ai_not_configured`, el código de barras de Nutella (3017620422003) trae sus cifras de Open Food Facts, uno que no
+existe da `404 not_found` y la cabecera CORS está.
+
+**Fase 4, sin probar:** el análisis real de una foto o un texto con Claude (no hay `ANTHROPIC_API_KEY` todavía);
+el móvil hablando con el servidor dentro de WSL (hace falta la red «mirrored» y abrir el puerto 3000); la
+preparación de fotos (`photo-prep.ts` usa Expo: se probará con las pantallas de la fase 5). Ninguna pantalla usa
+todavía el cliente.
+
+**Decisiones de la fase 4:**
+- El servidor pide a Claude **salida estructurada** con un esquema JSON y la valida con Zod, en lugar de buscar el
+  JSON dentro del texto. Comprueba antes si el modelo se negó o se quedó sin espacio.
+- **Reintento en otro modelo si el modelo se niega** (`fallbacks: "default"`). Para quitarlo, dos líneas en
+  `server/src/analysis.js`.
+- Modelo por defecto `claude-sonnet-5-5` (el de Marc), configurable con `ANTHROPIC_MODEL`; esfuerzo opcional
+  con `ANTHROPIC_EFFORT`.
+- Errores con códigos estables (`ai_not_configured`, `ai_busy`, `not_found`…) que la app traduce a mensajes
+  claros, en lugar del «Error 500» de antes. Un producto que no existe ya no se confunde con un fallo de red.
+- El servidor recibe la lista de alergias y alimentos excluidos (`avoid`) y la IA marca en cada alimento los que
+  podría contener; solo se aceptan avisos de esa lista. La app los usará en la fase 8.
+- Sin clave de Anthropic el servidor arranca igual: el código de barras funciona y el resto avisa.
+- La app busca el servidor en el mismo ordenador que le sirve el código, puerto 3000, salvo que se configure
+  `EXPO_PUBLIC_API_URL` (`app/.env.example`). Con `--tunnel` hay que configurarlo.
+- El token (`APP_TOKEN` / `EXPO_PUBLIC_APP_TOKEN`) se compara sin filtrar tiempos y se comprueba antes de leer el
+  cuerpo. Dentro de la app no es un secreto: solo frena a curiosos.
 
 **Fase 3, comprobado (17/10/2026):** `npm run check` con tipos, lint y **88 pruebas** (24 nuevas: 9 del dominio
 de nutrición y 15 de la capa de datos, incluida la actualización de una base de datos de la versión 1 con datos).

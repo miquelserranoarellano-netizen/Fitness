@@ -1,0 +1,24 @@
+{
+  "name": "appcombinada-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor de la app combinada: analiza fotos y textos de comida con Claude y busca las cifras en USDA y Open Food Facts.",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.8",
+    "express": "^4.22.3",
+    "express-rate-limit": "^8.7.1",
+    "zod": "^4.6.7"
+  }
+}
