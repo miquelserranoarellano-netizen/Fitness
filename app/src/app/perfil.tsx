@@ -67,6 +67,7 @@ export default function ProfileScreen() {
   return (
     <Screen description={t("Tus datos, objetivos y preferencias. Todo es editable: mantenlo al día para que el plan siga siendo tuyo.")}>
       <ProfileEditor profile={profile} />
+      <Limitations limitations={limitations} />
 
       <Card>
         <CardHeader
@@ -94,18 +95,17 @@ export default function ProfileScreen() {
       </Card>
 
       <Reminders profile={profile} />
-      <Limitations limitations={limitations} />
       <DataCard />
 
       <Card>
         <CardHeader title={t("Privacidad e inteligencia artificial")} />
         <View style={{ gap: space.sm }}>
           <Txt variant="small">
-            {t("Todos tus datos se guardan solo en este teléfono, dentro de la app. No hay cuenta ni servidor: nada sale del dispositivo salvo que tú exportes tus datos.")}
+            {t("Tus datos se guardan solo en este teléfono, dentro de la app: no hay cuenta. Nada más sale del dispositivo salvo que tú exportes tus datos o analices una comida.")}
           </Txt>
           <Txt variant="small">
             {t(
-              "La IA opcional de la versión web (comentarios de las revisiones y del análisis) no está en la app: necesitaría un servidor para guardar la clave de forma segura. Todos los cálculos y recomendaciones de esta app salen de reglas explícitas sobre tus datos.",
+              "Al analizar una comida, su foto (reducida y sin ubicación) o su texto, junto con las alergias y alimentos que evitas, van a tu servidor, que usa la IA de Anthropic para reconocer los alimentos; el servidor no guarda las fotos. El entrenamiento, el objetivo de calorías y todas las recomendaciones salen de reglas explícitas sobre tus datos.",
             )}
           </Txt>
           <Txt variant="small">{t("Esta aplicación no hace diagnósticos médicos. Si tienes dolor o una lesión, consulta a un profesional sanitario.")}</Txt>

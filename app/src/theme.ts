@@ -1,16 +1,17 @@
 import { createContext, useContext } from "react";
 
 /**
- * Sistema visual: sobrio, con un único acento lima para acciones y progreso, en modo oscuro (el
- * original) y claro. Las pantallas leen la paleta con `useColors()`; nunca importan colores fijos.
+ * Sistema visual: sobrio y elegante, con un único acento para acciones y progreso. El modo por
+ * defecto es el claro (fondo blanco, tarjetas en un gris cálido muy suave y acento verde bosque); el
+ * oscuro (el original, con acento lima) se elige en «Más». Las pantallas leen la paleta con
+ * `useColors()`; nunca importan colores fijos.
  *
  * Contraste comprobado (WCAG): los textos (`fg`, `muted`, `subtle`, `accentFg` y los de estado)
  * llegan a 4,5:1 sobre `bg`, `surface` y `raised`; las marcas de los gráficos, a 3:1 sobre `surface`.
  * La paleta de datos (viz1-3) es la misma en los dos modos y pasa el validador de daltonismo.
  *
- * `accent` es el relleno lima (botón principal, casillas marcadas) y siempre lleva texto `accentInk`.
- * Para texto, iconos y trazos de acento se usa `accentFg`: en oscuro es el mismo lima; en claro, un
- * verde oliva legible sobre blanco.
+ * `accent` es el relleno del botón principal y de las casillas marcadas, y siempre lleva texto
+ * `accentInk`. Para texto, iconos y trazos de acento se usa `accentFg`.
  */
 
 export type Scheme = "light" | "dark";
@@ -125,79 +126,79 @@ const dark: Palette = {
 
 const light: Palette = {
   scheme: "light",
-  bg: "#f4f5f7",
-  surface: "#ffffff",
-  raised: "#eceef1",
-  hover: "#e3e6ea",
-  line: "rgba(0,0,0,0.08)",
-  lineStrong: "rgba(0,0,0,0.15)",
+  bg: "#ffffff",
+  surface: "#f6f7f5",
+  raised: "#ffffff",
+  hover: "#eceeeb",
+  line: "rgba(18,21,19,0.07)",
+  lineStrong: "rgba(18,21,19,0.16)",
 
-  fg: "#111316",
-  muted: "#4f545c",
-  subtle: "#62676f",
+  fg: "#121513",
+  muted: "#545a56",
+  subtle: "#666c68",
 
-  accent: "#c2f25c",
-  accentInk: "#0c1203",
-  accentFg: "#456d0a",
-  accentBorder: "#6a9418",
-  accentFaint: "rgba(69,109,10,0.06)",
-  accentSoft: "rgba(69,109,10,0.10)",
-  accentLine: "rgba(69,109,10,0.35)",
+  accent: "#1d6b45",
+  accentInk: "#ffffff",
+  accentFg: "#1d6b45",
+  accentBorder: "#1d6b45",
+  accentFaint: "rgba(29,107,69,0.05)",
+  accentSoft: "rgba(29,107,69,0.09)",
+  accentLine: "rgba(29,107,69,0.35)",
 
-  positive: "#0f7442",
-  warning: "#965500",
-  danger: "#c62828",
-  info: "#1f5fbf",
-  dangerSoft: "rgba(198,40,40,0.08)",
-  dangerLine: "rgba(198,40,40,0.35)",
+  positive: "#13744a",
+  warning: "#955800",
+  danger: "#bf352b",
+  info: "#2a62b8",
+  dangerSoft: "rgba(191,53,43,0.07)",
+  dangerLine: "rgba(191,53,43,0.30)",
 
-  track: "rgba(0,0,0,0.07)",
-  trackFaint: "rgba(0,0,0,0.04)",
-  ringTrack: "rgba(0,0,0,0.08)",
-  overlay: "rgba(0,0,0,0.45)",
-  figure: "rgba(0,0,0,0.28)",
-  figureMark: "rgba(0,0,0,0.2)",
+  track: "rgba(18,21,19,0.07)",
+  trackFaint: "rgba(18,21,19,0.04)",
+  ringTrack: "rgba(18,21,19,0.08)",
+  overlay: "rgba(0,0,0,0.40)",
+  figure: "rgba(0,0,0,0.26)",
+  figureMark: "rgba(0,0,0,0.18)",
 
   viz1: "#3987e5",
   viz2: "#d95926",
   viz3: "#199e70",
-  vizMuted: "#868b93",
-  vizGrid: "#e9ebef",
-  vizAxis: "#8a9098",
-  vizBand: "rgba(0,0,0,0.05)",
+  vizMuted: "#878d89",
+  vizGrid: "#e8eae7",
+  vizAxis: "#868c88",
+  vizBand: "rgba(18,21,19,0.05)",
 
-  tone: { neutral: "#4f545c", accent: "#456d0a", positive: "#0f7442", warning: "#965500", danger: "#c62828", info: "#1f5fbf" },
+  tone: { neutral: "#545a56", accent: "#1d6b45", positive: "#13744a", warning: "#955800", danger: "#bf352b", info: "#2a62b8" },
   toneBg: {
-    neutral: "rgba(0,0,0,0.05)",
-    accent: "rgba(69,109,10,0.10)",
-    positive: "rgba(15,116,66,0.10)",
-    warning: "rgba(150,85,0,0.10)",
-    danger: "rgba(198,40,40,0.08)",
-    info: "rgba(31,95,191,0.08)",
+    neutral: "rgba(18,21,19,0.05)",
+    accent: "rgba(29,107,69,0.09)",
+    positive: "rgba(19,116,74,0.09)",
+    warning: "rgba(149,88,0,0.09)",
+    danger: "rgba(191,53,43,0.07)",
+    info: "rgba(42,98,184,0.08)",
   },
 };
 
 export const palettes: Record<Scheme, Palette> = { dark, light };
 
-/** Modo efectivo: el elegido o, en «sistema», el del teléfono (oscuro si no se sabe). */
+/** Modo efectivo: el elegido o, en «sistema», el del teléfono (claro si no se sabe). */
 export function resolveScheme(mode: ThemeMode, system: string | null | undefined): Scheme {
   if (mode !== "system") return mode;
-  return system === "light" ? "light" : "dark";
+  return system === "dark" ? "dark" : "light";
 }
 
-export const ThemeContext = createContext<Palette>(dark);
+export const ThemeContext = createContext<Palette>(light);
 
 /** Paleta del tema activo. */
 export function useColors(): Palette {
   return useContext(ThemeContext);
 }
 
-export const radius = { sm: 8, md: 12, lg: 16, full: 999 } as const;
+export const radius = { sm: 8, md: 12, lg: 20, full: 999 } as const;
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 
 export const font = {
-  title: 28,
+  title: 30,
   h1: 22,
   h2: 18,
   body: 15,

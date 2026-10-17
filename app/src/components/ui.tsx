@@ -11,7 +11,7 @@ type TxtVariant = "title" | "h1" | "h2" | "body" | "muted" | "small" | "subtle" 
 const txtStyle = (variant: TxtVariant, colors: Palette): TextStyle => {
   switch (variant) {
     case "title":
-      return { fontSize: font.title, fontWeight: "600", color: colors.fg, letterSpacing: -0.5, lineHeight: 34 };
+      return { fontSize: font.title, fontWeight: "600", color: colors.fg, letterSpacing: -0.6, lineHeight: 36 };
     case "h1":
       return { fontSize: font.h1, fontWeight: "600", color: colors.fg, letterSpacing: -0.3, lineHeight: 28 };
     case "h2":

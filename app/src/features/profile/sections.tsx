@@ -155,7 +155,8 @@ export function GoalsSection({ draft, update }: SectionProps) {
   );
 }
 
-export function ExperienceSection({ draft, update }: SectionProps) {
+/** `brief`: versión del cuestionario inicial, sin marcas ni rutinas anteriores (se completan en Perfil). */
+export function ExperienceSection({ draft, update, brief = false }: SectionProps & { brief?: boolean }) {
   const unit = weightUnit(draft.units);
   return (
     <Gap>
@@ -170,36 +171,38 @@ export function ExperienceSection({ draft, update }: SectionProps) {
           {t("Suelo apuntar los pesos y las repeticiones que hago.")}
         </Toggle>
       </View>
-      <Field
-        label={t("Marcas aproximadas")}
-        optional
-        hint={t("Un peso y las repeticiones que haces con él con buena técnica. No hace falta que sea tu máximo. Déjalo vacío si no lo sabes.")}
-      >
-        <View style={{ gap: space.sm }}>
-          {MARK_LIFTS.map((lift) => (
-            <View key={lift} style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
-              <Txt variant="small" style={{ flex: 1 }}>
-                {MARK_LIFT_LABEL[lift]}
-              </Txt>
-              <UnitInput
-                unit={unit}
-                style={{ width: 104 }}
-                accessibilityLabel={t("{ejercicio}: peso", { ejercicio: MARK_LIFT_LABEL[lift] })}
-                value={draft.marks[lift].weight}
-                onChangeText={(weight) => update({ marks: { ...draft.marks, [lift]: { ...draft.marks[lift], weight } } })}
-              />
-              <UnitInput
-                unit={t("reps")}
-                integer
-                style={{ width: 92 }}
-                accessibilityLabel={t("{ejercicio}: repeticiones", { ejercicio: MARK_LIFT_LABEL[lift] })}
-                value={draft.marks[lift].reps}
-                onChangeText={(reps) => update({ marks: { ...draft.marks, [lift]: { ...draft.marks[lift], reps } } })}
-              />
-            </View>
-          ))}
-        </View>
-      </Field>
+      {brief ? null : (
+        <Field
+          label={t("Marcas aproximadas")}
+          optional
+          hint={t("Un peso y las repeticiones que haces con él con buena técnica. No hace falta que sea tu máximo. Déjalo vacío si no lo sabes.")}
+        >
+          <View style={{ gap: space.sm }}>
+            {MARK_LIFTS.map((lift) => (
+              <View key={lift} style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+                <Txt variant="small" style={{ flex: 1 }}>
+                  {MARK_LIFT_LABEL[lift]}
+                </Txt>
+                <UnitInput
+                  unit={unit}
+                  style={{ width: 104 }}
+                  accessibilityLabel={t("{ejercicio}: peso", { ejercicio: MARK_LIFT_LABEL[lift] })}
+                  value={draft.marks[lift].weight}
+                  onChangeText={(weight) => update({ marks: { ...draft.marks, [lift]: { ...draft.marks[lift], weight } } })}
+                />
+                <UnitInput
+                  unit={t("reps")}
+                  integer
+                  style={{ width: 92 }}
+                  accessibilityLabel={t("{ejercicio}: repeticiones", { ejercicio: MARK_LIFT_LABEL[lift] })}
+                  value={draft.marks[lift].reps}
+                  onChangeText={(reps) => update({ marks: { ...draft.marks, [lift]: { ...draft.marks[lift], reps } } })}
+                />
+              </View>
+            ))}
+          </View>
+        </Field>
+      )}
       <Field
         label={t("¿Qué grupos musculares notas más débiles o atrasados?")}
         optional
@@ -207,9 +210,11 @@ export function ExperienceSection({ draft, update }: SectionProps) {
       >
         <Chips options={optionsOf(MUSCLES, MUSCLE_LABEL)} values={draft.weakMuscles} onChange={(weakMuscles) => update({ weakMuscles })} />
       </Field>
-      <Field label={t("Rutinas anteriores")} optional hint={t("Qué has hecho hasta ahora y qué tal te fue.")}>
-        <Input value={draft.previousRoutines} onChangeText={(previousRoutines) => update({ previousRoutines })} maxLength={1000} multiline />
-      </Field>
+      {brief ? null : (
+        <Field label={t("Rutinas anteriores")} optional hint={t("Qué has hecho hasta ahora y qué tal te fue.")}>
+          <Input value={draft.previousRoutines} onChangeText={(previousRoutines) => update({ previousRoutines })} maxLength={1000} multiline />
+        </Field>
+      )}
     </Gap>
   );
 }

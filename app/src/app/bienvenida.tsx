@@ -9,17 +9,7 @@ import { useData, useMutation, useQuery } from "@/data/provider";
 import { completeOnboarding } from "@/data/services";
 import { EQUIPMENT_LABEL, GOAL_LABEL, MEASURES, MUSCLE_LABEL } from "@/domain/types";
 import { emptyDraft, onboardingFromDraft, validateStep, type Draft, type StepId } from "@/features/onboarding/draft";
-import {
-  AvailabilitySection,
-  ExercisesSection,
-  ExperienceSection,
-  GoalsSection,
-  HabitsSection,
-  LimitationsSection,
-  MeasuresSection,
-  NutritionSection,
-  PersonalSection,
-} from "@/features/profile/sections";
+import { AvailabilitySection, ExperienceSection, GoalsSection, HabitsSection, MeasuresSection, NutritionSection, PersonalSection } from "@/features/profile/sections";
 import { msg, t, tn } from "@/i18n";
 import { lengthUnit, weightUnit } from "@/lib/units";
 import { radius, space, useColors } from "@/theme";
@@ -31,9 +21,8 @@ const STEPS: Step[] = [
   { id: "personal", title: msg("Empecemos por ti"), lead: msg("Unos datos básicos para calcular tus necesidades. Podrás cambiarlos cuando quieras.") },
   { id: "goals", title: msg("¿Qué quieres conseguir?"), lead: msg("Tu objetivo decide cómo reparto el entrenamiento y la alimentación.") },
   { id: "experience", title: msg("Tu experiencia"), lead: msg("Para ajustar el volumen, la intensidad y la dificultad técnica de los ejercicios.") },
-  { id: "exercises", title: msg("Tus preferencias"), lead: msg("Una rutina que te gusta es una rutina que cumples. Este paso es opcional.") },
+  // Ejercicios favoritos o a evitar, marcas, rutinas anteriores y lesiones se añaden después, en Perfil.
   { id: "availability", title: msg("Tiempo y material"), lead: msg("La distribución de la rutina depende de los días y el tiempo que tengas de verdad.") },
-  { id: "limitations", title: msg("Lesiones y molestias"), lead: msg("Si no tienes ninguna, continúa sin añadir nada.") },
   { id: "measures", title: msg("Medidas corporales"), lead: msg("Son la mejor forma de saber qué crece y qué se estanca. Se repiten una vez al mes.") },
   { id: "habits", title: msg("Tu día a día"), lead: msg("El descanso y la actividad diaria condicionan lo que puedes recuperar y lo que gastas.") },
   { id: "nutrition", title: msg("Alimentación"), lead: msg("Sirve para tus objetivos y para avisarte al registrar comidas.") },
@@ -137,10 +126,8 @@ function Wizard({ initial }: { initial: Saved | null }) {
       {step.id === "intro" && <Intro />}
       {step.id === "personal" && <PersonalSection {...section} />}
       {step.id === "goals" && <GoalsSection {...section} />}
-      {step.id === "experience" && <ExperienceSection {...section} />}
-      {step.id === "exercises" && <ExercisesSection {...section} />}
+      {step.id === "experience" && <ExperienceSection {...section} brief />}
       {step.id === "availability" && <AvailabilitySection {...section} />}
-      {step.id === "limitations" && <LimitationsSection {...section} />}
       {step.id === "measures" && <MeasuresSection {...section} />}
       {step.id === "habits" && <HabitsSection {...section} />}
       {step.id === "nutrition" && <NutritionSection {...section} />}
@@ -170,7 +157,7 @@ function Intro() {
           <Txt style={{ fontWeight: "600" }}>{t("Tus datos se quedan en este teléfono")}</Txt>
           <Txt variant="small">
             {t(
-              "Vas a indicar datos de salud (peso, medidas, lesiones). Se guardan solo en este dispositivo: no hay cuenta. Lo único que sale del teléfono son las comidas que decidas analizar (su foto o su texto, con las alergias que hayas indicado), que van a tu servidor para reconocer los alimentos. Puedes exportar o borrar tus datos desde Perfil cuando quieras. Al continuar aceptas guardarlos aquí con ese fin.",
+              "Vas a indicar datos de salud (peso y medidas). Se guardan solo en este dispositivo: no hay cuenta. Lo único que sale del teléfono son las comidas que decidas analizar (su foto o su texto, con las alergias que hayas indicado), que van a tu servidor para reconocer los alimentos. Puedes exportar o borrar tus datos desde Perfil cuando quieras. Al continuar aceptas guardarlos aquí con ese fin.",
             )}
           </Txt>
           <Txt variant="small">{t("Esta aplicación no hace diagnósticos médicos. Si tienes dolor o una lesión, consulta a un profesional sanitario.")}</Txt>
@@ -227,11 +214,6 @@ function Summary({ draft, onEdit }: { draft: Draft; onEdit: (index: number) => v
     },
     { label: t("Material"), value: draft.equipment.map((item) => EQUIPMENT_LABEL[item].toLowerCase()).join(", "), step: at("availability") },
     {
-      label: t("Lesiones y molestias"),
-      value: draft.limitations.length === 0 ? t("Ninguna indicada") : tn(draft.limitations.length, "{n} indicada", "{n} indicadas"),
-      step: at("limitations"),
-    },
-    {
       label: t("Medidas"),
       value: measured === 0 ? t("Sin medidas por ahora (podrás añadirlas después)") : t("{n} de {total} completadas", { n: measured, total: MEASURES.length }),
       step: at("measures"),
@@ -269,6 +251,11 @@ function Summary({ draft, onEdit }: { draft: Draft; onEdit: (index: number) => v
           </View>
         ))}
       </View>
+      <Notice tone="warning" title={t("Si tienes alguna lesión o molestia")}>
+        {t(
+          "Añádela en Más → Perfil, en «Lesiones, molestias y limitaciones», antes de entrenar y genera la rutina de nuevo, para que evite los ejercicios que cargan esa zona. En Perfil también puedes añadir tus marcas, rutinas anteriores y los ejercicios que te gustan o prefieres evitar.",
+        )}
+      </Notice>
       <Notice title={t("Qué voy a hacer con estos datos")}>
         {t(
           "Calcular tu nivel, elegir la distribución de entrenamiento que mejor encaja con tus días, repartir el volumen según tus prioridades y estimar tus calorías y macronutrientes. Son cálculos con reglas explícitas: en el informe verás el porqué de cada decisión.",

@@ -10,6 +10,8 @@ Estado: **aprobado el 17/10/2026. Fases 2 a 5 hechas** (ver `app/docs/ESTADO.md`
 | Suscripción | **Quitarla de momento** | Fuera `paywall`, `purchases.ts`, `access.ts` y `react-native-purchases`. Todo gratis |
 | Tema | **Oscuro y claro** | `src/theme.ts` pasa de colores fijos a un tema por contexto (sistema, claro, oscuro) con una paleta clara nueva, comprobada en contraste |
 | Comidas | **Editar, borrar y guardar foto** | Se pueden corregir y borrar. La foto se copia a la carpeta privada de la app (como las fotos de progreso) y se borra con la comida |
+| Estilo (tras verla en el móvil) | **Fondo blanco, más elegante** | El claro pasa a ser el tema por defecto, con paleta nueva (blanco, gris cálido, verde bosque); el oscuro sigue en «Más» |
+| Cuestionario (tras verla en el móvil) | **Más corto** | Fuera del cuestionario inicial: marcas, rutinas anteriores, ejercicios favoritos y a evitar, lesiones y limitaciones de movilidad. Se completan en Perfil (lesiones, arriba del todo) |
 
 Normas que cambian respecto al `CLAUDE.md` de Miquel: los textos ya no son solo en español; el resto se mantiene.
 

@@ -15,9 +15,9 @@ cambia en cada SDK: consulta la documentación de la v57 antes de usar una API) 
   Dentro de `db.transaction(tx => …)` usa solo `tx`.
 - **Pantallas.** Leen con `useQuery` y escriben con `useMutation` (`src/data/provider.tsx`), que refresca todo tras
   cada escritura. Las operaciones de varias tablas van en `src/data/services.ts` y validan su entrada.
-- **Tema claro y oscuro.** Los colores salen siempre de `useColors()` (`src/theme.ts`); nunca un color fijo en una
-  pantalla. Texto, iconos y trazos de acento con `accentFg`; el relleno lima (`accent`) siempre con texto
-  `accentInk`. Si añades un color, defínelo en las dos paletas y comprueba su contraste (4,5:1 en texto).
+- **Tema claro (por defecto) y oscuro.** Los colores salen siempre de `useColors()` (`src/theme.ts`); nunca un color
+  fijo en una pantalla. Claro: fondo blanco, tarjetas gris cálido y acento verde bosque; oscuro: acento lima. Texto,
+  iconos y trazos de acento con `accentFg`; el relleno de acento (`accent`) siempre con texto `accentInk`. Si añades un color, defínelo en las dos paletas y comprueba su contraste (4,5:1 en texto).
 - **Idiomas (ES, EN, FR, DE).** Todo texto visible pasa por `t()` / `tn()` de `src/i18n`: el español es la clave
   (`t("Guardar peso")`, `t("Unas {kcal} kcal", { kcal })`, `tn(n, "{n} serie", "{n} series")`). Fuera de un
   componente se marca con `msg()` y se traduce al mostrarlo. No partas frases en trozos si se puede evitar.

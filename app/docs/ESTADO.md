@@ -11,7 +11,21 @@
 | 3 | Migración 2 y capa de datos de nutrición (comidas con alimentos, favoritas, agua, pasos, ajustes, dieta) | Hecha |
 | 4 | Servidor (`../server/`) y cliente de la API (`src/lib/api.ts`, `api-config.ts`, `photo-prep.ts`) | Hecha |
 | 5 | Pantallas de comida (`src/app/comida/`): foto, texto, código de barras, favoritas, revisar y corregir | Hecha |
-| 6-10 | Inicio y Nutrición, cuestionario único, conexiones, agua y pasos, traducción | Pendientes |
+| 6-10 | Inicio y Nutrición, cuestionario único, conexiones, agua y pasos, traducción | Pendientes (la 6, empezada) |
+
+**Cambios tras verla en el móvil (17/10/2026):** por primera vez en un móvil real (Expo Go con `npx expo start
+--tunnel`, con sesión de Expo iniciada en Ubuntu). A petición de Miquel:
+- **Fondo blanco y más elegante:** el tema claro es ahora el de por defecto, con una paleta nueva (fondo blanco,
+  tarjetas en gris cálido, acento verde bosque `#1d6b45` en lugar del lima, títulos algo mayores y esquinas más
+  redondeadas). Contraste comprobado: textos de 5:1 en adelante y gráficos de 3:1. El oscuro sigue en «Más». La
+  pantalla de arranque pasa a verde bosque (el icono es blanco).
+- **Cuestionario más corto (8 pasos en vez de 10):** fuera las marcas aproximadas, las rutinas anteriores, los
+  ejercicios favoritos y a evitar, las lesiones y molestias y las limitaciones de movilidad. Se completan en Perfil,
+  donde «Lesiones, molestias y limitaciones» sube justo debajo de los datos; el resumen final avisa de añadir ahí
+  cualquier lesión antes de entrenar y generar la rutina de nuevo.
+- Textos de privacidad de la bienvenida y del perfil al día (ya hay servidor para analizar comidas).
+- Comprobado: `npm run check` (122 pruebas) y en la vista web (fondo blanco y «Paso 1 de 8»). En el móvil, el
+  cambio de tema se ve al momento; el cuestionario nuevo, solo al empezar de cero.
 
 **Fase 5, comprobado (17/10/2026):** `npm run check` con tipos, lint y **122 pruebas** (18 nuevas: 12 del borrador de
 comida y 6 de guardar con favoritas, corregir y deshacer si algo falla). `expo export` para Android compila y

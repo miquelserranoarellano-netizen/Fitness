@@ -19,7 +19,8 @@ import { palettes, resolveScheme, ThemeContext, type Scheme, type ThemeMode } fr
 export type Preferences = { theme: ThemeMode; language: LanguagePreference };
 
 const KEY = "preferencias";
-const DEFAULTS: Preferences = { theme: "system", language: "system" };
+// Claro por defecto (fondo blanco); el oscuro y el del sistema se eligen en «Más».
+const DEFAULTS: Preferences = { theme: "light", language: "system" };
 const THEMES: readonly ThemeMode[] = ["system", "light", "dark"];
 const LANGUAGES: readonly LanguagePreference[] = ["system", "es", "en", "fr", "de"];
 

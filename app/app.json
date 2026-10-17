@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "smartfitnesscoach",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#08090a",
+    "backgroundColor": "#ffffff",
     "ios": {
       "icon": "./assets/expo.icon"
     },
@@ -29,7 +29,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#08090a",
+          "backgroundColor": "#1d6b45",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
