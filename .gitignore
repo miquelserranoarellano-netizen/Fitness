@@ -1,0 +1,25 @@
+# Copias intactas de las dos apps de partida: solo en local (y en el USB).
+/originales/
+
+# Dependencias y archivos generados (cada carpeta tiene además su propio .gitignore).
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# Claves y configuración local: nunca al repositorio. Los .env.example sí se suben.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.mobileprovision
+
+# Sistema
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
