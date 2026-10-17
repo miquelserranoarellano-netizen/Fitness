@@ -27,6 +27,10 @@ cambia en cada SDK: consulta la documentación de la v57 antes de usar una API) 
   (`src/integrations/nutrition/`, ver `docs/INTEGRACION-NUTRICION.md`); sus totales salen de `mealTotals` y
   `scaleItem` (`src/domain/nutrition/intake.ts`), nunca de la pantalla. Borrar una comida con `deleteMeal`
   (borra también su foto). El objetivo de kcal y macros sale solo de `src/domain/nutrition/targets.ts`.
+- **Registrar comidas.** Pantallas en `src/app/comida/` (foto, texto, código, favoritas → `nueva`; corregir en
+  `[id]`). Pasan un `MealDraft` (`src/features/meals/draft.ts`, funciones puras con pruebas) con `setMealDraft` y
+  la revisión (`MealEditor`) guarda con `saveMeal` (`src/data/meals.ts`, en una transacción con la favorita).
+  `AddMealButtons` son los botones para empezar desde cualquier pantalla.
 - **Servidor.** Toda petición pasa por `getApi()` (`src/lib/api-config.ts`), y las fotos se preparan antes con
   `preparePhotoForAnalysis` (`src/lib/photo-prep.ts`). Los errores son `ApiError` con código: se enseñan con
   `apiErrorMessage` y se ofrece «Reintentar» solo si `isRetryable`. La clave de Anthropic nunca va en la app

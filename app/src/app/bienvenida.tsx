@@ -36,7 +36,7 @@ const STEPS: Step[] = [
   { id: "limitations", title: msg("Lesiones y molestias"), lead: msg("Si no tienes ninguna, continúa sin añadir nada.") },
   { id: "measures", title: msg("Medidas corporales"), lead: msg("Son la mejor forma de saber qué crece y qué se estanca. Se repiten una vez al mes.") },
   { id: "habits", title: msg("Tu día a día"), lead: msg("El descanso y la actividad diaria condicionan lo que puedes recuperar y lo que gastas.") },
-  { id: "nutrition", title: msg("Alimentación"), lead: msg("Tus preferencias se guardan para la parte de comidas, que se conectará más adelante.") },
+  { id: "nutrition", title: msg("Alimentación"), lead: msg("Sirve para tus objetivos y para avisarte al registrar comidas.") },
   { id: "summary", title: msg("Todo listo"), lead: msg("Revisa el resumen. Con estos datos prepararé tu informe inicial, tu rutina y tus objetivos nutricionales.") },
 ];
 
@@ -170,7 +170,7 @@ function Intro() {
           <Txt style={{ fontWeight: "600" }}>{t("Tus datos se quedan en este teléfono")}</Txt>
           <Txt variant="small">
             {t(
-              "Vas a indicar datos de salud (peso, medidas, lesiones). Se guardan solo en este dispositivo: no hay cuenta, no se envían a ningún servidor ni a ninguna IA. Puedes exportarlos o borrarlos desde Perfil cuando quieras. Al continuar aceptas guardarlos aquí con ese fin.",
+              "Vas a indicar datos de salud (peso, medidas, lesiones). Se guardan solo en este dispositivo: no hay cuenta. Lo único que sale del teléfono son las comidas que decidas analizar (su foto o su texto, con las alergias que hayas indicado), que van a tu servidor para reconocer los alimentos. Puedes exportar o borrar tus datos desde Perfil cuando quieras. Al continuar aceptas guardarlos aquí con ese fin.",
             )}
           </Txt>
           <Txt variant="small">{t("Esta aplicación no hace diagnósticos médicos. Si tienes dolor o una lesión, consulta a un profesional sanitario.")}</Txt>

@@ -401,7 +401,7 @@ export function NutritionSection({ draft, update }: SectionProps) {
       <Field label={t("Tipo de alimentación")}>
         <OptionCards options={optionsOf(DIETS, DIET_LABEL)} value={draft.dietPreference} onChange={(dietPreference) => update({ dietPreference })} />
       </Field>
-      <Field label={t("Alergias e intolerancias")} optional hint={t("Se guardan para que la parte de alimentación nunca te proponga esos alimentos.")}>
+      <Field label={t("Alergias e intolerancias")} optional hint={t("Al analizar una comida, la IA te avisará si podría contener alguno.")}>
         <Chips options={optionsOf(ALLERGENS, ALLERGEN_LABEL)} values={draft.allergies} onChange={(allergies) => update({ allergies })} />
       </Field>
       <Field label={t("Otras alergias, intolerancias o restricciones")} optional>

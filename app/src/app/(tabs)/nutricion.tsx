@@ -1,6 +1,7 @@
-import { Camera, Plug } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { ChevronRight } from "lucide-react-native";
 import { useState } from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Loading, Screen } from "@/components/screen";
 import { Badge, Button, Card, CardHeader, Collapsible, EmptyState, Notice, ProgressBar, Row, Stat, StatRow, Txt } from "@/components/ui";
 import { getInsights } from "@/data/insights";
@@ -8,22 +9,23 @@ import { listNutritionTargets } from "@/data/nutrition";
 import { useMutation, useQuery } from "@/data/provider";
 import { applyCalorieDecision, recalculateTarget } from "@/data/services";
 import { ALLERGEN_LABEL, DIET_LABEL, GOAL_LABEL } from "@/domain/types";
+import { AddMealButtons, MealThumb } from "@/features/meals/components";
 import { msg, t } from "@/i18n";
-import { connectedSources } from "@/integrations/nutrition/sources";
 import { getDayIntake } from "@/integrations/nutrition/store";
 import { formatDate, formatTime } from "@/lib/dates";
 import { formatNumber, formatSigned } from "@/lib/units";
-import { radius, space, useColors } from "@/theme";
+import { space, useColors } from "@/theme";
 
 const REASON_LABEL = { initial: msg("Cálculo inicial"), adjustment: msg("Ajuste por tendencia"), profile_change: msg("Recalculado") } as const;
 
 /**
- * Nutrición «a medias», a propósito: esta app calcula CUÁNTO comer (calorías y macros, y si hay que
- * ajustarlo según la tendencia del peso). QUÉ se come lo aportará la app de fotos de comida cuando se
- * combinen; su hueco está en «Lo que comes hoy» (ver docs/INTEGRACION-NUTRICION.md).
+ * Nutrición: CUÁNTO comer (calorías y macros, y si hay que ajustarlo según la tendencia del peso) y
+ * QUÉ se ha comido hoy, con los botones para registrarlo (pantallas de `comida/`). Ver
+ * docs/INTEGRACION-NUTRICION.md.
  */
 export default function Nutrition() {
   const colors = useColors();
+  const router = useRouter();
   const query = useQuery(async (db) => {
     const insights = await getInsights(db);
     return { insights, history: await listNutritionTargets(db), intake: await getDayIntake(db, insights.today) };
@@ -34,7 +36,6 @@ export default function Nutrition() {
 
   const { insights, history, intake } = query.data;
   const { profile, nutritionTarget: target, calorieDecision: decision } = insights;
-  const sources = connectedSources();
 
   const recalculate = async () => {
     const result = await run((db) => recalculateTarget(db));
@@ -139,53 +140,49 @@ export default function Nutrition() {
         ) : null}
       </Card>
 
-      {/* El hueco para la app de fotos de comida. */}
-      <Card style={{ borderStyle: "dashed", borderColor: colors.lineStrong }}>
-        <CardHeader
-          title={t("Lo que comes hoy")}
-          eyebrow={sources.length > 0 ? sources.map((source) => source.label).join(" · ") : t("Pendiente de conectar")}
-          action={<Camera size={22} color={colors.subtle} />}
-        />
-        {intake.entries.length > 0 ? (
-          <View style={{ gap: space.lg }}>
-            <Meter label={t("Calorías")} value={intake.calories} target={target.calories} unit="kcal" />
-            {intake.proteinG !== null ? <Meter label={t("Proteína")} value={intake.proteinG} target={target.proteinG} unit="g" /> : null}
-            {intake.carbsG !== null ? <Meter label={t("Carbohidratos")} value={intake.carbsG} target={target.carbsG} unit="g" /> : null}
-            {intake.fatG !== null ? <Meter label={t("Grasas")} value={intake.fatG} target={target.fatG} unit="g" /> : null}
+      {/* Lo comido hoy y cómo registrarlo. La pantalla completa (tira semanal, agua, pasos) llega en la fase 6. */}
+      <Card>
+        <CardHeader title={t("Lo que comes hoy")} eyebrow={formatDate(insights.today)} />
+        <View style={{ gap: space.lg }}>
+          <Meter label={t("Calorías")} value={intake.calories} target={target.calories} unit="kcal" />
+          <Meter label={t("Proteína")} value={intake.proteinG ?? 0} target={target.proteinG} unit="g" />
+          {intake.carbsG !== null ? <Meter label={t("Carbohidratos")} value={intake.carbsG} target={target.carbsG} unit="g" /> : null}
+          {intake.fatG !== null ? <Meter label={t("Grasas")} value={intake.fatG} target={target.fatG} unit="g" /> : null}
+          {intake.entries.length > 0 ? (
             <View>
               {intake.entries.map((entry) => (
-                <View key={entry.id} style={{ flexDirection: "row", gap: space.md, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line }}>
-                  <Txt variant="tiny" num style={{ width: 40 }}>
-                    {formatTime(entry.eatenAt)}
-                  </Txt>
-                  <Txt variant="small" style={{ flex: 1, color: colors.fg }} numberOfLines={1}>
-                    {entry.name}
-                  </Txt>
+                <Pressable
+                  key={entry.id}
+                  onPress={() => router.push({ pathname: "/comida/[id]", params: { id: entry.id } })}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("Corregir {comida}", { comida: entry.name })}
+                  style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: space.md, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line, opacity: pressed ? 0.7 : 1 })}
+                >
+                  <MealThumb uri={entry.photoUri} size={36} />
+                  <View style={{ flex: 1 }}>
+                    <Txt variant="small" style={{ color: colors.fg }} numberOfLines={1}>
+                      {entry.name}
+                    </Txt>
+                    <Txt variant="tiny" num>
+                      {formatTime(entry.eatenAt)}
+                    </Txt>
+                  </View>
                   <Txt variant="small" num>
                     {formatNumber(entry.calories, 0)} kcal
                   </Txt>
-                </View>
+                  <ChevronRight size={16} color={colors.subtle} />
+                </Pressable>
               ))}
             </View>
-          </View>
-        ) : (
-          <View style={{ gap: space.md }}>
-            <View style={{ flexDirection: "row", gap: space.md, padding: space.md, borderRadius: radius.md, backgroundColor: colors.bg }}>
-              <Plug size={18} color={colors.muted} style={{ marginTop: 2 }} />
-              <Txt variant="small" style={{ flex: 1 }}>
-                {t(
-                  "Aquí aparecerán las comidas que registres haciéndoles una foto con la app de alimentación, y cuánto llevas del objetivo de hoy. Esa parte se conectará más adelante: por ahora no hay nada que registrar aquí.",
-                )}
-              </Txt>
-            </View>
-            <Meter label={t("Calorías")} value={0} target={target.calories} unit="kcal" muted />
-            <Meter label={t("Proteína")} value={0} target={target.proteinG} unit="g" muted />
-          </View>
-        )}
+          ) : (
+            <Txt variant="small">{t("Aún no has registrado nada hoy. Haz una foto del plato, escríbelo o escanea el código de barras.")}</Txt>
+          )}
+          <AddMealButtons />
+        </View>
       </Card>
 
       <Card>
-        <CardHeader title={t("Tus preferencias")} description={t("Guardadas para cuando se conecte la parte de comidas. Puedes cambiarlas en Perfil → Alimentación.")} />
+        <CardHeader title={t("Tus preferencias")} description={t("Al analizar una comida, la IA avisa si podría contener algo de lo que evitas. Puedes cambiarlas en Perfil → Alimentación.")} />
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           <Badge>{DIET_LABEL[profile.dietPreference]}</Badge>
           <Badge>{t("{n} comidas al día", { n: profile.mealsPerDay })}</Badge>
@@ -216,14 +213,14 @@ export default function Nutrition() {
   );
 }
 
-function Meter({ label, value, target, unit, muted }: { label: string; value: number; target: number; unit: string; muted?: boolean }) {
+function Meter({ label, value, target, unit }: { label: string; value: number; target: number; unit: string }) {
   const colors = useColors();
   return (
-    <View style={{ gap: 6, opacity: muted ? 0.5 : 1 }}>
+    <View style={{ gap: 6 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <Txt variant="small">{label}</Txt>
         <Txt variant="small" num style={{ color: colors.fg }}>
-          {muted ? "—" : formatNumber(value, 0)} / {formatNumber(target, 0)} {unit}
+          {formatNumber(value, 0)} / {formatNumber(target, 0)} {unit}
         </Txt>
       </View>
       <ProgressBar value={target > 0 ? value / target : 0} tone="info" />

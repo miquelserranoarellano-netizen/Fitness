@@ -1,6 +1,6 @@
 # Plan de fusión: Smart Fitness Coach + SnapCal
 
-Estado: **aprobado el 17/10/2026. Fases 2, 3 y 4 hechas** (ver `app/docs/ESTADO.md`). Siguiente: fase 5. Sigue `PROMPT-FUSION-APPS.md`.
+Estado: **aprobado el 17/10/2026. Fases 2 a 5 hechas** (ver `app/docs/ESTADO.md`). Siguiente: fase 6. Sigue `PROMPT-FUSION-APPS.md`.
 
 ## Decisiones de Miquel (17/10/2026)
 
@@ -109,9 +109,9 @@ notificaciones y calorías sobrantes. Al final, el informe inicial con el anillo
 2. Base: `app/` desde la app de Miquel, tema claro/oscuro y sistema de traducciones (español completo); fuera la
    suscripción ✔
 3. Migración 2 y capa de datos de nutrición, con pruebas ✔
-4. Servidor (`server/`) y cliente de la API (`src/lib/api.ts`) ✔ ← siguiente: 5
-5. Pantallas de foto, texto, código de barras, resultado y favoritas (ya con traducciones y tema). Incluye
-   cambiar los textos de permiso de cámara y fotos de `app.json`, que hoy dicen que las fotos no salen del teléfono
+4. Servidor (`server/`) y cliente de la API (`src/lib/api.ts`) ✔
+5. Pantallas de foto, texto, código de barras, resultado y favoritas (ya con traducciones y tema), con los textos de
+   permiso de cámara y fotos corregidos ✔ ← siguiente: 6
 6. Inicio y Nutrición con datos reales
 7. Cuestionario único y perfil
 8. Conexiones entre entreno y nutrición

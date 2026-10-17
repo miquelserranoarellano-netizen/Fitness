@@ -13,6 +13,8 @@ import { getLanguage, msg, t, type Language } from "@/i18n";
  */
 
 export const DEFAULT_SERVER_PORT = 3000;
+/** Lo que acepta el servidor en `/analyze-text`. */
+export const MAX_TEXT_LENGTH = 500;
 
 /** Códigos que devuelve el servidor en `{ code, error }`. */
 const SERVER_ERROR_CODES = [

@@ -29,7 +29,7 @@ const isOurs = (uri: string) => uri.includes(`/${FOLDER}/`);
 export async function storeMealPhoto(sourceUri: string, size: { width: number; height: number }): Promise<string> {
   const context = ImageManipulator.manipulate(sourceUri);
   if (Math.max(size.width, size.height) > MAX_SIDE) {
-    context.resize(size.width >= size.height ? { width: MAX_SIDE, height: null } : { width: null, height: MAX_SIDE });
+    context.resize(size.width >= size.height ? { width: MAX_SIDE } : { height: MAX_SIDE });
   }
   const rendered = await context.renderAsync();
   const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 });

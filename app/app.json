@@ -39,8 +39,17 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "La app usa tus fotos solo si eliges una fotografía de progreso. Se guarda en el teléfono y no se envía a ningún sitio.",
-          "cameraPermission": "La app usa la cámara solo para hacer fotografías de progreso. Se guardan en el teléfono y no se envían a ningún sitio."
+          "photosPermission": "La app usa las fotos que elijas para tus fotografías de progreso, que se quedan en el teléfono, y para registrar comidas: la foto de una comida se envía reducida a tu servidor para reconocer los alimentos.",
+          "cameraPermission": "La app usa la cámara para tus fotografías de progreso, que se quedan en el teléfono, y para registrar comidas: lee códigos de barras y la foto de una comida se envía reducida a tu servidor para reconocer los alimentos.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "La app usa la cámara para tus fotografías de progreso, que se quedan en el teléfono, y para registrar comidas: lee códigos de barras y la foto de una comida se envía reducida a tu servidor para reconocer los alimentos.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       "expo-localization"

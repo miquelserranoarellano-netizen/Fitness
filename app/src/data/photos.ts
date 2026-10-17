@@ -44,7 +44,7 @@ export async function addPhoto(db: Db, input: { sourceUri: string; width: number
   const context = ImageManipulator.manipulate(input.sourceUri);
   const longest = Math.max(input.width, input.height);
   if (longest > MAX_SIDE) {
-    context.resize(input.width >= input.height ? { width: MAX_SIDE, height: null } : { width: null, height: MAX_SIDE });
+    context.resize(input.width >= input.height ? { width: MAX_SIDE } : { height: MAX_SIDE });
   }
   const rendered = await context.renderAsync();
   const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 });

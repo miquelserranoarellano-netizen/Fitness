@@ -63,6 +63,12 @@ function AppShell() {
           <Stack.Screen name="revisiones/semana/[week]" options={{ title: t("Informe semanal") }} />
           <Stack.Screen name="revisiones/mes/[id]" options={{ title: t("Informe mensual") }} />
           <Stack.Screen name="perfil" options={{ title: t("Perfil") }} />
+          <Stack.Screen name="comida/foto" options={{ title: t("Foto de la comida") }} />
+          <Stack.Screen name="comida/texto" options={{ title: t("Escribir la comida") }} />
+          <Stack.Screen name="comida/codigo" options={{ title: t("Código de barras") }} />
+          <Stack.Screen name="comida/favoritas" options={{ title: t("Favoritas y recientes") }} />
+          <Stack.Screen name="comida/nueva" options={{ title: t("Revisar comida") }} />
+          <Stack.Screen name="comida/[id]" options={{ title: t("Corregir comida") }} />
         </Stack>
       </DataProvider>
     </ThemeProvider>

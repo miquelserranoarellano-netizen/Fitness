@@ -1,6 +1,6 @@
 # Estado de la app
 
-Última actualización: 17 de octubre de 2026 · Fusión con SnapCal en curso (fase 4 de 10 hecha).
+Última actualización: 17 de octubre de 2026 · Fusión con SnapCal en curso (fase 5 de 10 hecha).
 
 ## Fusión con SnapCal
 
@@ -10,7 +10,39 @@
 | 2 | Base: tema claro/oscuro, sistema de traducciones, preferencias de tema e idioma (en «Más») | Hecha |
 | 3 | Migración 2 y capa de datos de nutrición (comidas con alimentos, favoritas, agua, pasos, ajustes, dieta) | Hecha |
 | 4 | Servidor (`../server/`) y cliente de la API (`src/lib/api.ts`, `api-config.ts`, `photo-prep.ts`) | Hecha |
-| 5-10 | Pantallas de comida, Inicio y Nutrición, cuestionario único, conexiones, agua y pasos, traducción | Pendientes |
+| 5 | Pantallas de comida (`src/app/comida/`): foto, texto, código de barras, favoritas, revisar y corregir | Hecha |
+| 6-10 | Inicio y Nutrición, cuestionario único, conexiones, agua y pasos, traducción | Pendientes |
+
+**Fase 5, comprobado (17/10/2026):** `npm run check` con tipos, lint y **122 pruebas** (18 nuevas: 12 del borrador de
+comida y 6 de guardar con favoritas, corregir y deshacer si algo falla). `expo export` para Android compila y
+`expo-doctor` 21/21; el micrófono queda fuera del manifiesto. En la vista web, con el servidor de verdad y un perfil
+de prueba con alergia al gluten: código de barras de Nutella → revisar → 15 g recalcula a 81 kcal y el margen →
+guardar con estrella → aparece en Nutrición y en Favoritas; «+» la vuelve a añadir; una comida a mano (manzana)
+se guarda, se corrige a 300 g sin cambiar la hora y se borra con la confirmación; un código que no existe da su
+aviso con «Escribirla» y «Añadirla a mano»; el texto sin clave de Anthropic explica qué falta, y la petición lleva
+el idioma y la alergia (`avoid: ["Gluten"]`).
+
+**Fase 5, sin probar:** todo en un móvil real (cámara, lectura de códigos, galería, guardar la foto con la comida y
+borrarla); el análisis real de fotos y textos y los avisos de alergias (sin clave de Anthropic); la preparación de
+la foto en la web (en la prueba el panel del navegador estaba oculto y el navegador no decodifica imágenes así; se
+corrigió un fallo de `expo-image-manipulator` en web leyendo su código, ver decisiones).
+
+**Decisiones de la fase 5:**
+- Foto con la cámara del sistema (`expo-image-picker`), como las fotos de progreso, en vez del visor propio de
+  SnapCal. `expo-camera` solo se usa para leer códigos de barras, y solo en el móvil; en la web se escribe el número
+  (también se puede en el móvil). `comida/foto?abrir=camara` abre la cámara al entrar (para el botón grande de Inicio).
+- Todo pasa por la pantalla de revisión (`comida/nueva`), que es la misma que corrige una comida guardada
+  (`comida/[id]`): nombre, gramos de cada alimento (recalcula desde los valores de partida), quitar y añadir
+  alimentos a mano, día, «guardar también en favoritas» y avisos. Guardar vuelve a la pestaña desde la que se empezó.
+- Las alergias y alimentos excluidos del perfil ya se mandan al servidor y la revisión muestra «Podría contener…».
+  La fase 8 añade la búsqueda por palabras clave en la app.
+- Borrar una comida pide confirmación dentro de la pantalla (no con `Alert`, que no funciona en la web).
+- «Recientes» repite una comida como `favorita`; «+» la añade a hoy y se queda en la pantalla para añadir varias.
+- En la web no se guarda la foto de la comida (no hay carpeta de la app).
+- `resize` con `null` en el otro lado rompe el redimensionado en la web: ahora se indica solo un lado (también en
+  las fotos de progreso).
+- Textos de privacidad corregidos: la bienvenida y los permisos de cámara y fotos ya dicen que las comidas que
+  analizas van a tu servidor.
 
 **Fase 4, comprobado (17/10/2026):** en `server/`, **29 pruebas** con `node --test` (rutas, errores, token, límite
 de peticiones, esquema y búsquedas, con un cliente de Anthropic y bases de datos falsos). En `app/`, `npm run
