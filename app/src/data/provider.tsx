@@ -1,10 +1,10 @@
 import * as Crypto from "expo-crypto";
 import { useFocusEffect } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { Alert } from "react-native";
 import { openAppDb } from "@/db/expo";
 import type { Db } from "@/db/types";
 import { t } from "@/i18n";
+import { appAlert } from "@/lib/alert";
 import { setIdGenerator } from "@/lib/id";
 
 type DataContext = { db: Db; version: number; invalidate: () => void };
@@ -121,7 +121,7 @@ export function useMutation() {
         invalidate();
         return result;
       } catch (cause) {
-        Alert.alert(t("No se ha podido guardar"), cause instanceof Error ? cause.message : String(cause));
+        appAlert(t("No se ha podido guardar"), cause instanceof Error ? cause.message : String(cause));
         return undefined;
       } finally {
         setPending(false);

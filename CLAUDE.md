@@ -5,6 +5,9 @@ Fusión de Smart Fitness Coach (Miquel) y SnapCal (Marc) en una sola app de móv
 - `app/`: la app combinada (Expo). Sus normas están en `app/CLAUDE.md`.
 - `server/`: el servidor de SnapCal modernizado (Express, Claude con salida estructurada, USDA y Open Food Facts).
   La clave de Anthropic solo vive en `server/.env`, nunca en la app. Pruebas: `npm test` dentro de `server/`.
+- Despliegue: `docker-compose.yml` (raíz), `deploy/` (Caddy, imagen de la web, scripts del VPS) y `DESPLIEGUE.md`.
+  Acceso al servidor con códigos por persona (`ACCESS_CODES`), nunca con secretos dentro de la app. `SEGURIDAD.md`
+  recoge la revisión de seguridad: ponla al día si cambias algo de lo que cuenta.
 - `originales/`: copias intactas de las dos apps. Solo de consulta: no se modifican.
 - `fusion/`: el encargo (`PROMPT-FUSION-APPS.md`), los dos resúmenes y el plan con las decisiones (`PLAN-FUSION.md`).
 

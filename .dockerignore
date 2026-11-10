@@ -1,0 +1,12 @@
+# Lo que no hace falta (o no debe) entrar en la imagen de la web.
+.git
+**/node_modules
+**/dist
+**/.expo
+**/.env
+**/.env.*
+!**/.env.example
+originales
+fusion
+server
+**/*.log

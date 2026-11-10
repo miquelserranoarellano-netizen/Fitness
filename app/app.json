@@ -22,7 +22,9 @@
     },
     "web": {
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "lang": "es",
+      "themeColor": "#1d6b45"
     },
     "plugins": [
       "expo-router",
@@ -52,7 +54,13 @@
           "recordAudioAndroid": false
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,0 +1,51 @@
+# Caddy en el VPS: HTTPS automático con Let's Encrypt, la web de la app y /api hacia el servidor.
+# DOMAIN y ACME_EMAIL salen del .env de la raíz (ver DESPLIEGUE.md).
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		# Solo HTTPS durante un año (Caddy ya redirige de http a https).
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=(), usb=()"
+		# Aislamiento entre orígenes: lo necesita SQLite en el navegador (SharedArrayBuffer).
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Embedder-Policy "require-corp"
+		Cross-Origin-Resource-Policy "same-origin"
+		# Solo código, estilos y conexiones de este mismo dominio. 'wasm-unsafe-eval' es para SQLite (WebAssembly).
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: data:; worker-src 'self' blob:; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		# Versión de prueba: fuera de los buscadores.
+		X-Robots-Tag "noindex, nofollow"
+		-Server
+	}
+
+	# El servidor de la app: /api/health → api:3000/health. Solo se llega a él por aquí.
+	handle_path /api/* {
+		request_body {
+			max_size 9MB
+		}
+		reverse_proxy api:3000
+	}
+
+	# La web: una sola página, así que cualquier ruta que no sea un archivo carga index.html.
+	handle {
+		root * /srv
+		@static path /_expo/static/* /assets/*
+		header @static Cache-Control "public, max-age=31536000, immutable"
+		@page not path /_expo/static/* /assets/*
+		header @page Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

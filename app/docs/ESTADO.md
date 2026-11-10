@@ -1,6 +1,32 @@
 # Estado de la app
 
-Última actualización: 17 de octubre de 2026 · Fusión con SnapCal en curso (fase 5 de 10 hecha).
+Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
+en curso (fase 5 de 10 hecha).
+
+## VPS, seguridad y versión web (10/11/2026)
+
+Para probar la app durante un mes desde el navegador antes del App Store. Guía en `../DESPLIEGUE.md`; revisión de
+seguridad completa en `../SEGURIDAD.md`.
+
+- **Despliegue:** `docker-compose.yml` con Caddy (HTTPS automático, la web y `/api` → servidor) y el servidor sin
+  puertos públicos. La web se compila con `EXPO_PUBLIC_API_URL=/api` (mismo dominio).
+- **Acceso:** fuera `APP_TOKEN`/`EXPO_PUBLIC_APP_TOKEN` (iba dentro de la app). Ahora cada persona tiene un código
+  (`ACCESS_CODES`) que escribe en **Más → Servidor y código de acceso** (`servidor.tsx`); se guarda en el llavero
+  (`expo-secure-store`, nueva dependencia de Expo Go) o en el navegador. Cupos diarios y análisis a la vez limitados.
+- **Web:** los diálogos de confirmación ya funcionan (`appAlert`: generar rutina, evaluar bloque, descartar o borrar
+  sesiones, pesadas, medidas…); «Exportar mis datos» descarga el JSON; se pide almacenamiento persistente; aviso en
+  «Más» para exportar y, en el iPhone, añadirla a la pantalla de inicio; las fotos de progreso dicen que son solo
+  del móvil; manifiesto, iconos y `noindex`.
+- **Comprobado:** `npm run check` (124 pruebas), `expo export` para Android y web, servidor con 37 pruebas (8
+  nuevas: códigos, cupos, análisis a la vez, proxy, CORS, formato de imagen). En el navegador, con la web compilada
+  como en el VPS, el servidor en modo producción y un proxy local con las mismas cabeceras que Caddy (CSP, COOP,
+  COEP): SQLite arranca (`crossOriginIsolated`), sin avisos de CSP; código falso rechazado y bueno aceptado («0 de
+  40»); sin código, el error ofrece «Poner el código»; código de barras de Nutella hasta «Revisar comida»;
+  cuestionario completo; la confirmación de «Generar una rutina nueva» aparece; la exportación da un JSON válido.
+- **Sin probar:** Docker y Caddy de verdad (no había Docker en el PC), el VPS, el análisis real con IA (sin clave
+  de Anthropic), Safari en el iPhone, y el código de acceso en el móvil con Expo Go.
+- **Pendiente:** importar una exportación (para pasar los datos de la web a la app del App Store); icono propio y
+  `ios.bundleIdentifier`; consentimiento explícito antes del primer análisis con IA (lo pide Apple).
 
 ## Fusión con SnapCal
 

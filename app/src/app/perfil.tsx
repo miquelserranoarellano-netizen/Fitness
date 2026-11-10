@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { ChevronDown, Download, Trash2 } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Field, Segmented, Toggle } from "@/components/form";
 import { Loading, Screen } from "@/components/screen";
 import { Badge, Button, Card, CardHeader, Collapsible, Notice, Txt } from "@/components/ui";
@@ -29,7 +29,9 @@ import {
   type SectionProps,
 } from "@/features/profile/sections";
 import { msg, t } from "@/i18n";
+import { appAlert } from "@/lib/alert";
 import { formatDate, today } from "@/lib/dates";
+import { downloadJson, isWeb } from "@/lib/web";
 import { radius, space, useColors } from "@/theme";
 
 const SECTIONS: { id: StepId; title: string; summary: string; render: (props: SectionProps) => ReactNode }[] = [
@@ -50,7 +52,7 @@ export default function ProfileScreen() {
   const { profile, limitations, block } = query.data;
 
   const regenerate = () =>
-    Alert.alert(t("Generar una rutina nueva"), t("Se cierra el bloque actual y se crea uno nuevo con tu perfil actual. Tu historial de cargas se conserva."), [
+    appAlert(t("Generar una rutina nueva"), t("Se cierra el bloque actual y se crea uno nuevo con tu perfil actual. Tu historial de cargas se conserva."), [
       { text: t("Cancelar"), style: "cancel" },
       {
         text: t("Generar"),
@@ -307,23 +309,25 @@ function DataCard() {
     try {
       const data = await run((db) => exportAllData(db));
       if (!data) return;
-      const file = new File(Paths.cache, `smart-fitness-coach-${today()}.json`);
+      const fileName = `smart-fitness-coach-${today()}.json`;
+      if (isWeb) return downloadJson(fileName, data);
+      const file = new File(Paths.cache, fileName);
       file.create({ overwrite: true });
       file.write(JSON.stringify(data, null, 2));
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(file.uri, { mimeType: "application/json", dialogTitle: t("Exportar mis datos") });
       } else {
-        Alert.alert(t("Exportación lista"), t("Se ha guardado en: {ruta}", { ruta: file.uri }));
+        appAlert(t("Exportación lista"), t("Se ha guardado en: {ruta}", { ruta: file.uri }));
       }
     } catch (cause) {
-      Alert.alert(t("No se ha podido exportar"), cause instanceof Error ? cause.message : String(cause));
+      appAlert(t("No se ha podido exportar"), cause instanceof Error ? cause.message : String(cause));
     } finally {
       setExporting(false);
     }
   };
 
   const deleteEverything = () =>
-    Alert.alert(
+    appAlert(
       t("Borrar todos mis datos"),
       t(
         "Se eliminarán de forma definitiva tu perfil, pesos, medidas, fotografías, rutinas, sesiones y revisiones de este teléfono. No se puede deshacer. Si quieres conservar una copia, exporta antes tus datos.",

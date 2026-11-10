@@ -34,12 +34,16 @@ cambia en cada SDK: consulta la documentación de la v57 antes de usar una API) 
 - **Servidor.** Toda petición pasa por `getApi()` (`src/lib/api-config.ts`), y las fotos se preparan antes con
   `preparePhotoForAnalysis` (`src/lib/photo-prep.ts`). Los errores son `ApiError` con código: se enseñan con
   `apiErrorMessage` y se ofrece «Reintentar» solo si `isRetryable`. La clave de Anthropic nunca va en la app
-  (ni en `EXPO_PUBLIC_*`): vive en `server/.env`.
+  (ni en `EXPO_PUBLIC_*`): vive en `server/.env`. Ningún secreto va en `EXPO_PUBLIC_*` (en la web se lee): el código
+  de acceso de cada persona se escribe en `servidor.tsx` y se guarda con `src/lib/access-code.ts`.
+- **Web (prueba en el VPS).** Diálogos con `appAlert` (`src/lib/alert.ts`), nunca `Alert.alert`, que en la web no
+  hace nada. Lo que solo existe en el móvil (`expo-file-system`, cámara de códigos) se esconde con `isWeb`
+  (`src/lib/web.ts`). La web publicada tiene una CSP estricta (`deploy/Caddyfile`): nada de scripts o recursos de
+  otros dominios.
 - No construir nada que parezca funcionar sin funcionar. Salud: no diagnosticar, no recomendar entrenar con dolor,
   no dietas extremas.
 - Comprobaciones: `npm run check` (tipos de app y de pruebas, lint y vitest) y `npx expo export --platform android`
   para validar el empaquetado. `npx expo-doctor` para dependencias.
 - Desarrollo en WSL: el móvil solo ve el servidor con la red «mirrored» de WSL (`npm start`) o con túnel
   (`npm run tunnel`). `npx expo start --web --port 8082` sirve para revisar pantallas en el navegador (el 8081 puede
-  estar ocupado por la app original). En web, SQLite es experimental y `Alert.alert` no funciona, así que los
-  borrados con confirmación solo se prueban en el móvil.
+  estar ocupado por la app original). En web, SQLite es experimental.

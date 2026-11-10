@@ -21,19 +21,29 @@ npm test               # pruebas sin red ni claves
 | `ANTHROPIC_API_KEY` | Análisis de fotos y textos | Esas rutas responden `503 ai_not_configured`; el código de barras funciona igual |
 | `ANTHROPIC_MODEL` | Modelo de Claude | `claude-sonnet-5-5` |
 | `ANTHROPIC_EFFORT` | `low` … `max`: menos esfuerzo responde antes | El del modelo |
-| `APP_TOKEN` | La app lo manda en `x-app-token` (`EXPO_PUBLIC_APP_TOKEN` en `app/.env`) | Sin comprobación: cualquiera que llegue al servidor puede gastar tu saldo |
+| `ACCESS_CODES` | Códigos de acceso, uno por persona: `nombre:código,nombre2:código2` (`npm run new-code -- nombre`). Cada persona escribe el suyo en la app (Más → Servidor) | Sin comprobación (solo en desarrollo). Con `NODE_ENV=production` el servidor no arranca |
+| `DAILY_LIMIT_PER_PERSON` / `DAILY_LIMIT_TOTAL` | Análisis con IA al día por persona y en total (0 = sin límite) | `40` / `300` |
+| `MAX_CONCURRENT_ANALYSES` | Análisis con IA a la vez | `4` |
+| `RATE_LIMIT_PER_MINUTE` | Peticiones por minuto y dirección IP | `20` |
+| `TRUST_PROXY` | Saltos de proxy delante (Caddy en el VPS: `1`) | Ninguno |
+| `ALLOWED_ORIGINS` | Webs de otro dominio que pueden llamar (separadas por comas) | Desarrollo: cualquiera. Producción: ninguna |
 | `USDA_API_KEY` | Búsquedas en USDA ([clave gratuita](https://fdc.nal.usda.gov/api-key-signup)) | `DEMO_KEY`, con un límite muy bajo |
-| `PORT` | Puerto | `3000` |
+| `PORT` / `HOST` | Puerto y dirección | `3000`, todas |
+
+Para el VPS (Docker, HTTPS, códigos), ver [`../DESPLIEGUE.md`](../DESPLIEGUE.md). La revisión de seguridad está en
+[`../SEGURIDAD.md`](../SEGURIDAD.md).
 
 ## Rutas
 
 | Ruta | Cuerpo | Respuesta |
 | --- | --- | --- |
-| `GET /health` | | `{ ok, ai }` (`ai`: si hay clave de Anthropic) |
+| `GET /health` | | `{ ok, ai, auth }` (`ai`: si hay clave de Anthropic; `auth`: si pide código) |
+| `GET /me` | | `{ name, used, limit, ai }`: de quién es el código y cuántos análisis lleva hoy |
 | `POST /analyze` | `{ imageBase64, mediaType, language, avoid }` | Resultado del análisis |
 | `POST /analyze-text` | `{ text, language, avoid }` (texto de hasta 500 caracteres) | Resultado del análisis |
 | `GET /barcode/:code?language=` | | Resultado con un alimento, más `per_100g` y `serving_grams` |
 
+- Todas salvo `/health` piden `Authorization: Bearer <código>` si hay `ACCESS_CODES`.
 - `language`: `es`, `en`, `fr` o `de` (idioma de los nombres de los alimentos). Otro valor: `es`.
 - `avoid`: lista de alergias o alimentos que el usuario evita (hasta 20). Cada alimento trae en `may_contain`
   los de esa lista que podría contener. Es un aviso para comprobar, no un diagnóstico.
@@ -44,12 +54,12 @@ npm test               # pruebas sin red ni claves
 
 | Código | Estado | Cuándo |
 | --- | --- | --- |
-| `bad_request` | 400 | Falta la imagen o el texto, formato no admitido, código de barras no válido |
-| `unauthorized` | 401 | `APP_TOKEN` configurado y la cabecera no coincide |
+| `bad_request` | 400 | Falta la imagen o el texto, la imagen no es JPEG, PNG ni WebP, código de barras no válido |
+| `unauthorized` | 401 | Hay `ACCESS_CODES` y el código falta, no existe o se ha retirado |
 | `not_found` | 404 | Código de barras que no está en Open Food Facts |
-| `too_large` | 413 | Cuerpo de más de 8 MB |
+| `too_large` | 413 | Foto de más de 8 MB o texto de más de 32 KB |
 | `ai_refused` | 422 | El modelo (y su alternativa) se ha negado a analizarlo |
-| `rate_limited` / `ai_busy` | 429 | Más de 20 peticiones por minuto / la API de Anthropic está saturada |
+| `rate_limited` / `ai_busy` / `quota_exceeded` | 429 | Más de 20 peticiones por minuto / Anthropic saturada o demasiados análisis a la vez / cupo diario agotado |
 | `ai_invalid_response`, `ai_bad_request`, `lookup_unavailable` | 502 | Respuesta cortada o mal formada / petición rechazada / Open Food Facts no responde |
 | `ai_not_configured`, `ai_auth_failed`, `ai_unavailable` | 503 | Sin clave / clave no válida / la API no responde |
 | `ai_timeout` | 504 | Claude no ha respondido a tiempo (50 s, con un reintento) |
@@ -77,7 +87,10 @@ otra cosa, el mismo ordenador que le sirve el código (ver `resolveApiUrl` en `a
 ## Archivos
 
 - `index.js`: arranque y configuración.
-- `src/app.js`: rutas, validación, token, límite de peticiones y errores.
+- `src/app.js`: rutas, validación, límite de peticiones, cupos y errores.
+- `src/access.js`: códigos de acceso y cupo diario.
+- `scripts/new-code.js`: genera un código de acceso.
+- `Dockerfile`: imagen para el VPS (sin root).
 - `src/analysis.js`: instrucciones, esquema, llamada a Claude y resultado.
 - `src/nutrition.js`: búsquedas en USDA y Open Food Facts.
 - `test/`: pruebas con `node --test` (cliente de Anthropic y bases de datos falsos).

@@ -1,0 +1,7 @@
+# Los scripts y la configuración del VPS se ejecutan en Linux: siempre con saltos de línea LF.
+*.sh text eol=lf
+Caddyfile text eol=lf
+*.Dockerfile text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+.env.example text eol=lf

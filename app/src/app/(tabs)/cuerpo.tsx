@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Camera, ImagePlus, Lock, Ruler, Trash2 } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { LineChart, Sparkline } from "@/components/charts";
 import { DateStepper, Field, Segmented, UnitInput } from "@/components/form";
 import { Loading, Screen } from "@/components/screen";
@@ -19,8 +19,10 @@ import { MEASURES, MEASURE_HELP, MEASURE_LABEL, type Measure } from "@/domain/ty
 import type { Measurements } from "@/features/profile/schema";
 import { MeasureGuide } from "@/features/profile/MeasureGuide";
 import { t, tn } from "@/i18n";
+import { appAlert } from "@/lib/alert";
 import { daysBetween, formatDate, formatShortDate, relativeDay, today as todayDate } from "@/lib/dates";
 import { formatNumber, formatSigned, fromDisplayLength, fromDisplayWeight, lengthUnit, parseDecimal, roundDisplay, toDisplayLength, toDisplayWeight, weightUnit } from "@/lib/units";
+import { isWeb } from "@/lib/web";
 import { radius, space, useColors } from "@/theme";
 
 export default function Body() {
@@ -169,7 +171,7 @@ export default function Body() {
         {measurements.length > 0 ? <MeasurementList measurements={measurements} /> : null}
       </Card>
 
-      <PhotosSection consent={profile.photosConsent} />
+      {isWeb ? <PhotosOnlyOnPhone /> : <PhotosSection consent={profile.photosConsent} />}
     </Screen>
   );
 }
@@ -227,7 +229,7 @@ function WeightHistory({ weights, units }: { weights: WeightRecord[]; units: Pro
   const list = [...weights].reverse();
   const w = (kg: number) => roundDisplay(toDisplayWeight(kg, units), 1);
   const remove = (entry: WeightRecord) =>
-    Alert.alert(t("Borrar pesada"), t("¿Borrar la pesada del {fecha}?", { fecha: formatDate(entry.date) }), [
+    appAlert(t("Borrar pesada"), t("¿Borrar la pesada del {fecha}?", { fecha: formatDate(entry.date) }), [
       { text: t("Cancelar"), style: "cancel" },
       { text: t("Borrar"), style: "destructive", onPress: () => run((db) => deleteWeight(db, entry.id)) },
     ]);
@@ -330,7 +332,7 @@ function MeasurementList({ measurements }: { measurements: MeasurementRecord[] }
   const colors = useColors();
   const { run } = useMutation();
   const remove = (record: MeasurementRecord) =>
-    Alert.alert(t("Borrar medición"), t("¿Borrar las medidas del {fecha}?", { fecha: formatDate(record.date) }), [
+    appAlert(t("Borrar medición"), t("¿Borrar las medidas del {fecha}?", { fecha: formatDate(record.date) }), [
       { text: t("Cancelar"), style: "cancel" },
       { text: t("Borrar"), style: "destructive", onPress: () => run((db) => deleteMeasurements(db, record.id)) },
     ]);
@@ -353,6 +355,15 @@ function MeasurementList({ measurements }: { measurements: MeasurementRecord[] }
 }
 
 /* ───────────────────────────── Fotografías ───────────────────────────── */
+
+/** En la web no hay carpeta privada de la app donde guardarlas (expo-file-system no existe allí). */
+function PhotosOnlyOnPhone() {
+  return (
+    <Card>
+      <CardHeader title={t("Fotografías de progreso")} description={t("Solo en la app del móvil: la versión web no tiene un sitio privado donde guardarlas.")} />
+    </Card>
+  );
+}
 
 function PhotosSection({ consent }: { consent: boolean }) {
   const colors = useColors();
@@ -390,7 +401,7 @@ function PhotosSection({ consent }: { consent: boolean }) {
     const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.9, exif: false };
     if (source === "camera") {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) return Alert.alert(t("Sin permiso de cámara"), t("Activa el permiso de cámara en los ajustes del teléfono o elige una foto de la galería."));
+      if (!permission.granted) return appAlert(t("Sin permiso de cámara"), t("Activa el permiso de cámara en los ajustes del teléfono o elige una foto de la galería."));
     }
     const result = source === "camera" ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
     const asset = result.canceled ? null : result.assets[0];
@@ -399,13 +410,13 @@ function PhotosSection({ consent }: { consent: boolean }) {
   };
 
   const remove = (id: string) =>
-    Alert.alert(t("Borrar fotografía"), t("Se borrará de forma definitiva."), [
+    appAlert(t("Borrar fotografía"), t("Se borrará de forma definitiva."), [
       { text: t("Cancelar"), style: "cancel" },
       { text: t("Borrar"), style: "destructive", onPress: () => run((db) => deletePhoto(db, id)) },
     ]);
 
   const revoke = () =>
-    Alert.alert(t("Retirar el permiso"), t("Se eliminarán de forma definitiva todas tus fotografías. No se puede deshacer."), [
+    appAlert(t("Retirar el permiso"), t("Se eliminarán de forma definitiva todas tus fotografías. No se puede deshacer."), [
       { text: t("Cancelar"), style: "cancel" },
       { text: t("Borrar todas"), style: "destructive", onPress: () => run((db) => revokePhotosConsent(db)) },
     ]);

@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { ClipboardCheck } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 import { Loading, Screen } from "@/components/screen";
 import { Badge, Button, Card, CardHeader, EmptyState, LinkRow, Notice, Txt } from "@/components/ui";
 import { listBlocks } from "@/data/blocks";
@@ -12,6 +12,7 @@ import { decideRecommendation, listMonthlyReports, listRecommendations } from "@
 import { generateMonthlyReport, startNextBlock } from "@/data/services";
 import { SPLIT_LABEL } from "@/domain/training/plan";
 import { msg, t, tn } from "@/i18n";
+import { appAlert } from "@/lib/alert";
 import { addDays, daysBetween, formatDate, formatShortDate } from "@/lib/dates";
 import { radius, space, useColors } from "@/theme";
 
@@ -48,7 +49,7 @@ export default function Reviews() {
   };
 
   const nextBlock = () =>
-    Alert.alert(
+    appAlert(
       t("Evaluar el bloque"),
       t("Se cierra el bloque actual con su evaluación y se genera el siguiente a partir de lo que has registrado. Tu historial se conserva."),
       [

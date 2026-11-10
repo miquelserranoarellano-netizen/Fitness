@@ -1,8 +1,8 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
+import { bearerToken, createDailyQuota, findTester } from "./access.js";
 import {
   AnalysisError,
   LANGS,
@@ -46,11 +46,16 @@ const textBody = z.object({
   avoid: z.unknown().optional(),
 });
 
-const sha256 = (value) => createHash("sha256").update(value).digest();
-
-/** Compara el token sin filtrar por el tiempo cuánto coincide. */
-function tokenMatches(received, expected) {
-  return typeof received === "string" && timingSafeEqual(sha256(received), sha256(expected));
+/**
+ * Formato real de la imagen según sus primeros bytes (no según lo que diga la petición), o null si no es
+ * JPEG, PNG ni WebP. Así a la IA solo llegan imágenes de verdad.
+ */
+export function sniffImageType(base64) {
+  const head = Buffer.from(base64.slice(0, 24), "base64");
+  if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return "image/jpeg";
+  if (head.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
+  if (head.toString("latin1", 0, 4) === "RIFF" && head.toString("latin1", 8, 12) === "WEBP") return "image/webp";
+  return null;
 }
 
 const fail = (res, status, code, error) => res.status(status).json({ code, error });
@@ -59,19 +64,38 @@ export function createApp({
   client = null,
   model = "claude-sonnet-5-5",
   effort = null,
-  appToken = "",
+  /** Personas con código de acceso (`parseAccessCodes`). Vacío: sin comprobación (solo para desarrollo). */
+  testers = [],
   lookupFood,
   lookupBarcode,
   rateLimitPerMinute = 20,
+  /** Análisis con IA al día por persona y en total (0 = sin límite). */
+  dailyLimitPerPerson = 40,
+  dailyLimitTotal = 300,
+  /** Análisis con IA a la vez; el resto recibe `ai_busy`. */
+  maxConcurrentAnalyses = 4,
+  /** Orígenes web que pueden llamar desde otro dominio: "*" (desarrollo), una lista o ninguno. */
+  corsOrigins = "*",
+  /** Proxies delante (Caddy): sin esto, todos los usuarios compartirían el límite de peticiones. */
+  trustProxy = false,
   logger = console,
+  now = () => new Date(),
 } = {}) {
   const app = express();
   app.disable("x-powered-by");
-  app.use(cors());
+  app.set("trust proxy", trustProxy);
+  if (corsOrigins === "*") app.use(cors());
+  else if (Array.isArray(corsOrigins) && corsOrigins.length > 0) app.use(cors({ origin: corsOrigins, maxAge: 600 }));
 
-  app.get("/health", (_req, res) => res.json({ ok: true, ai: client !== null }));
+  // Las respuestas son de una persona concreta: que no se guarden en cachés intermedias.
+  app.use((_req, res, next) => {
+    res.set({ "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" });
+    next();
+  });
 
-  // Lo que cuesta dinero o consulta fuera va con límite de peticiones y, si se configura, con token.
+  app.get("/health", (_req, res) => res.json({ ok: true, ai: client !== null, auth: testers.length > 0 }));
+
+  // Todo lo que cuesta dinero o consulta fuera va con límite de peticiones y código de acceso.
   const limiter = rateLimit({
     windowMs: 60 * 1000,
     limit: rateLimitPerMinute,
@@ -79,23 +103,63 @@ export function createApp({
     legacyHeaders: false,
     handler: (_req, res) => fail(res, 429, "rate_limited", "Demasiadas peticiones. Espera un minuto."),
   });
-  const checkToken = (req, res, next) => {
-    if (appToken && !tokenMatches(req.get("x-app-token"), appToken)) {
-      return fail(res, 401, "unauthorized", "Token de la app incorrecto.");
+  const authenticate = (req, res, next) => {
+    if (testers.length === 0) {
+      req.tester = "local";
+      return next();
     }
+    const name = findTester(testers, bearerToken(req.get("authorization")));
+    if (!name) {
+      logger.warn(`[acceso] código incorrecto o ausente en ${req.path} desde ${req.ip}`);
+      return fail(res, 401, "unauthorized", "Código de acceso incorrecto o retirado.");
+    }
+    req.tester = name;
     next();
   };
-  app.use(["/analyze", "/analyze-text", "/barcode"], limiter, checkToken);
-  // Después del token: una petición sin permiso no llega a leer los 8 MB del cuerpo.
-  app.use(express.json({ limit: "8mb" }));
+  const guard = [limiter, authenticate];
+  // El cuerpo se lee después del código: una petición sin permiso no llega a leer nada. Y cada ruta
+  // acepta solo lo que necesita (el texto no necesita 8 MB).
+  const imageJson = express.json({ limit: "8mb" });
+  const textJson = express.json({ limit: "32kb" });
+
+  const quota = createDailyQuota({ perPerson: dailyLimitPerPerson, total: dailyLimitTotal, now });
+  let running = 0;
+
+  // Registro de uso: quién, qué ruta, cómo acabó y cuánto tardó. Nunca el contenido.
+  const logUsage = (req, res, next) => {
+    const started = Date.now();
+    res.on("finish", () => logger.log(`[uso] ${req.tester ?? "-"} ${req.path} ${res.statusCode} ${Date.now() - started} ms`));
+    next();
+  };
+
+  app.get("/me", guard, (req, res) => {
+    const { used, limit } = quota.status(req.tester);
+    res.json({ name: req.tester, used, limit, ai: client !== null });
+  });
 
   const analyze = (source) => async (req, res, next) => {
+    let started = false;
     try {
       const parsed = (source === "image" ? imageBody : textBody).safeParse(req.body ?? {});
       if (!parsed.success) {
         return fail(res, 400, "bad_request", parsed.error.issues[0]?.message ?? "Petición no válida.");
       }
       const body = parsed.data;
+      let mediaType = body.mediaType;
+      if (source === "image") {
+        mediaType = sniffImageType(body.imageBase64);
+        if (!mediaType) return fail(res, 400, "bad_request", "La imagen no es JPEG, PNG ni WebP.");
+      }
+      if (!client) throw new AnalysisError("ai_not_configured", 503, "El servidor no tiene configurada la clave de Anthropic.");
+      if (running >= maxConcurrentAnalyses) return fail(res, 429, "ai_busy", "Hay demasiados análisis a la vez. Prueba en un momento.");
+      const over = quota.take(req.tester);
+      if (over) {
+        logger.warn(`[cupo] ${req.tester}: ${over === "person" ? "su límite diario" : "el límite diario total"}`);
+        return fail(res, 429, "quota_exceeded", over === "person" ? "Has llegado a tu límite de análisis de hoy." : "El servidor ha llegado al límite de análisis de hoy.");
+      }
+
+      running += 1;
+      started = true;
       const language = pickLanguage(body.language);
       const avoid = cleanAvoidList(body.avoid);
       const analysis = await requestAnalysis({
@@ -106,20 +170,22 @@ export function createApp({
         language,
         avoid,
         imageBase64: body.imageBase64,
-        mediaType: body.mediaType,
+        mediaType,
         text: body.text,
       });
       res.json(await buildResult(analysis, language, avoid, lookupFood));
     } catch (error) {
       next(error);
+    } finally {
+      if (started) running -= 1;
     }
   };
 
-  app.post("/analyze", analyze("image"));
-  app.post("/analyze-text", analyze("text"));
+  app.post("/analyze", guard, logUsage, imageJson, analyze("image"));
+  app.post("/analyze-text", guard, logUsage, textJson, analyze("text"));
 
   // Producto envasado por código de barras (Open Food Facts).
-  app.get("/barcode/:code", async (req, res, next) => {
+  app.get("/barcode/:code", guard, async (req, res, next) => {
     try {
       const code = String(req.params.code ?? "");
       if (!/^\d{8,14}$/.test(code)) return fail(res, 400, "bad_request", "Código de barras no válido.");
@@ -177,7 +243,7 @@ export function createApp({
 
   // Errores: los del análisis ya traen código; el resto se clasifica aquí. Nunca se registra la imagen.
   app.use((error, req, res, _next) => {
-    if (error?.type === "entity.too.large") return fail(res, 413, "too_large", "La imagen es demasiado grande.");
+    if (error?.type === "entity.too.large") return fail(res, 413, "too_large", "La petición es demasiado grande.");
     if (error?.type === "entity.parse.failed") return fail(res, 400, "bad_request", "El cuerpo no es un JSON válido.");
     if (error instanceof LookupUnavailableError) {
       logger.warn(`[${req.path}] ${error.message}`);

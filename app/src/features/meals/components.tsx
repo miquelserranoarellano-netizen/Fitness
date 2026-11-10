@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Camera, PencilLine, Plus, ScanBarcode, Star, UtensilsCrossed, type LucideIcon } from "lucide-react-native";
+import { Camera, KeyRound, PencilLine, Plus, ScanBarcode, Star, UtensilsCrossed, type LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { Button, Notice, Txt } from "@/components/ui";
@@ -32,13 +32,20 @@ export function WorkingPanel({ title, hint, onCancel }: { title: string; hint?: 
 
 /** Un error del servidor con su explicación, «Reintentar» si tiene sentido y otras salidas. */
 export function RequestError({ error, onRetry, children }: { error: unknown; onRetry?: () => void; children?: ReactNode }) {
+  const router = useRouter();
   const notConfigured = error instanceof ApiError && error.code === "ai_not_configured";
+  const needsCode = error instanceof ApiError && error.code === "unauthorized";
   return (
     <View style={{ gap: space.md }}>
-      <Notice tone={notConfigured ? "warning" : "danger"} title={notConfigured ? t("Falta configurar la IA") : t("No ha salido bien")}>
+      <Notice tone={notConfigured ? "warning" : "danger"} title={notConfigured ? t("Falta configurar la IA") : needsCode ? t("Falta tu código de acceso") : t("No ha salido bien")}>
         {apiErrorMessage(error)}
       </Notice>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+        {needsCode ? (
+          <Button size="sm" icon={KeyRound} onPress={() => router.push("/servidor")}>
+            {t("Poner el código")}
+          </Button>
+        ) : null}
         {onRetry && isRetryable(error) ? (
           <Button size="sm" onPress={onRetry}>
             {t("Reintentar")}

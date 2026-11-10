@@ -34,11 +34,13 @@ type InputProps = {
   multiline?: boolean;
   onBlur?: () => void;
   autoCapitalize?: "none" | "sentences" | "words";
+  /** false para códigos y claves: sin corrector ni sugerencias del teclado. */
+  autoCorrect?: boolean;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 };
 
-export function Input({ value, onChangeText, placeholder, keyboardType, maxLength, multiline, onBlur, autoCapitalize = "sentences", style, accessibilityLabel }: InputProps) {
+export function Input({ value, onChangeText, placeholder, keyboardType, maxLength, multiline, onBlur, autoCapitalize = "sentences", autoCorrect, style, accessibilityLabel }: InputProps) {
   const colors = useColors();
   return (
     <TextInput
@@ -51,6 +53,9 @@ export function Input({ value, onChangeText, placeholder, keyboardType, maxLengt
       maxLength={maxLength}
       multiline={multiline}
       autoCapitalize={autoCapitalize}
+      autoCorrect={autoCorrect}
+      spellCheck={autoCorrect}
+      autoComplete={autoCorrect === false ? "off" : undefined}
       accessibilityLabel={accessibilityLabel}
       style={[styles.input, box(colors), { color: colors.fg }, multiline && { minHeight: 84, paddingTop: 12, textAlignVertical: "top" }, style as object]}
     />

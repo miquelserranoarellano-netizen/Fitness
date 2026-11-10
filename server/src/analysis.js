@@ -28,7 +28,8 @@ export function cleanAvoidList(avoid) {
   const out = [];
   for (const raw of avoid) {
     if (typeof raw !== "string") continue;
-    const value = raw.trim().slice(0, 40);
+    // Van dentro de las instrucciones de la IA: sin saltos de línea ni caracteres de control.
+    const value = raw.replace(/[\p{Cc}\p{Cf}]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, 40);
     if (!value || seen.has(value.toLowerCase())) continue;
     seen.add(value.toLowerCase());
     out.push(value);

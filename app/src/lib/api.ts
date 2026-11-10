@@ -27,6 +27,7 @@ const SERVER_ERROR_CODES = [
   "ai_refused",
   "ai_invalid_response",
   "rate_limited",
+  "quota_exceeded",
   "unauthorized",
   "bad_request",
   "too_large",
@@ -107,7 +108,9 @@ const resultSchema = z.object({
   serving_grams: z.number().nullable().optional(),
 });
 
-const healthSchema = z.object({ ok: z.boolean(), ai: z.boolean() });
+const healthSchema = z.object({ ok: z.boolean(), ai: z.boolean(), auth: z.boolean().default(false) });
+
+const meSchema = z.object({ name: z.string(), used: z.number(), limit: z.number().nullable(), ai: z.boolean() });
 
 /** Un alimento reconocido. Encaja con `IncomingFoodItem` (`integrations/nutrition/contract.ts`). */
 export type AnalyzedFood = {
@@ -154,7 +157,11 @@ export type MealAnalysis = {
   servingGrams: number | null;
 };
 
-export type ServerHealth = { ok: boolean; ai: boolean };
+/** `auth`: si el servidor pide código de acceso. */
+export type ServerHealth = { ok: boolean; ai: boolean; auth: boolean };
+
+/** Quién eres para el servidor y cuántos análisis con IA llevas hoy (`limit` null: sin límite). */
+export type AccessStatus = { name: string; used: number; limit: number | null; ai: boolean };
 
 const orNull = (value: number | null | undefined) => value ?? null;
 
@@ -207,7 +214,8 @@ const isLocalNetworkHost = (host: string) =>
 
 /**
  * Dirección del servidor:
- * 1. La configurada (`EXPO_PUBLIC_API_URL`), si hay.
+ * 1. La configurada (`EXPO_PUBLIC_API_URL`), si hay. Una ruta («/api») es para la web publicada en el VPS:
+ *    el servidor está en el mismo dominio que la web. En el móvil una ruta no sirve y se ignora.
  * 2. En desarrollo, el mismo ordenador que sirve la app (el de Metro o la web) en el puerto 3000. Solo
  *    si es una dirección de la red local: con `--tunnel` el servidor no es accesible y hay que
  *    configurarlo.
@@ -216,14 +224,21 @@ const isLocalNetworkHost = (host: string) =>
 export function resolveApiUrl({
   configured,
   devHost,
+  webOrigin,
   port = DEFAULT_SERVER_PORT,
 }: {
   configured?: string | null;
   devHost?: string | null;
+  /** En la web, el origen de la página («https://fitness.ejemplo.com»). */
+  webOrigin?: string | null;
   port?: number;
 }): string {
   const explicit = configured?.trim().replace(/\/+$/, "");
-  if (explicit) return explicit;
+  if (explicit?.startsWith("/")) {
+    if (webOrigin) return `${webOrigin.replace(/\/+$/, "")}${explicit}`;
+  } else if (explicit) {
+    return explicit;
+  }
   const host = devHost
     ?.trim()
     .replace(/^[a-z]+:\/\//i, "")
@@ -236,8 +251,11 @@ export function resolveApiUrl({
 
 export type ApiClientOptions = {
   baseUrl: string;
-  /** El mismo valor que `APP_TOKEN` en `server/.env`. Vacío si el servidor no lo pide. */
-  appToken?: string;
+  /**
+   * Código de acceso de esta persona (uno de `ACCESS_CODES` del servidor). Se lee en cada petición porque
+   * se puede cambiar en Más → Servidor. Vacío si el servidor no lo pide.
+   */
+  accessCode?: () => string | null | undefined;
   fetch?: typeof fetch;
   /** Milisegundos. Un análisis con IA puede tardar: el servidor espera hasta ~100 s a Claude. */
   timeouts?: Partial<Record<"analysis" | "lookup" | "health", number>>;
@@ -289,7 +307,8 @@ export function createApiClient(options: ApiClientOptions) {
 
     const headers: Record<string, string> = { Accept: "application/json" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
-    if (options.appToken) headers["x-app-token"] = options.appToken;
+    const code = options.accessCode?.()?.trim();
+    if (code) headers.Authorization = `Bearer ${code}`;
 
     let response: Response;
     let payload: unknown;
@@ -328,9 +347,16 @@ export function createApiClient(options: ApiClientOptions) {
   return {
     baseUrl,
 
-    /** ¿Responde el servidor? ¿Tiene la IA configurada? */
+    /** ¿Responde el servidor? ¿Tiene la IA configurada? ¿Pide código de acceso? */
     async health(options: { signal?: AbortSignal } = {}): Promise<ServerHealth> {
       const parsed = healthSchema.safeParse(await request("/health", { method: "GET", timeoutMs: timeouts.health, signal: options.signal }));
+      if (!parsed.success) throw new ApiError("bad_response", { url: baseUrl });
+      return parsed.data;
+    },
+
+    /** Comprueba el código de acceso: quién eres y cuántos análisis llevas hoy. Si no vale, `unauthorized`. */
+    async me(options: { signal?: AbortSignal } = {}): Promise<AccessStatus> {
+      const parsed = meSchema.safeParse(await request("/me", { method: "GET", timeoutMs: timeouts.health, signal: options.signal }));
       if (!parsed.success) throw new ApiError("bad_response", { url: baseUrl });
       return parsed.data;
     },
@@ -378,13 +404,13 @@ export type ApiClient = ReturnType<typeof createApiClient>;
 
 const MESSAGES: Record<ApiErrorCode, string> = {
   no_server: msg("Falta la dirección del servidor. Configúrala en EXPO_PUBLIC_API_URL (app/.env)."),
-  network: msg("No se puede conectar con el servidor ({url}). Comprueba que está encendido y que el móvil está en la misma red."),
+  network: msg("No se puede conectar con el servidor ({url}). Comprueba la conexión a internet y que el servidor está encendido."),
   timeout: msg("El servidor ha tardado demasiado en responder. Prueba otra vez."),
   cancelled: msg("Cancelado."),
   bad_response: msg("El servidor ha respondido algo inesperado. Comprueba que la app y el servidor están actualizados."),
   prepare: msg("No se ha podido preparar la foto. Prueba con otra."),
   http: msg("Error del servidor ({status})."),
-  ai_not_configured: msg("El servidor no tiene la clave de Anthropic (ANTHROPIC_API_KEY en server/.env). Mientras, puedes añadir la comida a mano o con el código de barras."),
+  ai_not_configured: msg("El servidor todavía no tiene la IA configurada (falta la clave de Anthropic). Mientras, puedes añadir la comida a mano o con el código de barras."),
   ai_auth_failed: msg("La clave de Anthropic del servidor no es válida."),
   ai_busy: msg("La IA está saturada. Prueba en un momento."),
   ai_bad_request: msg("El servidor no ha podido preparar la petición a la IA."),
@@ -393,7 +419,8 @@ const MESSAGES: Record<ApiErrorCode, string> = {
   ai_refused: msg("La IA no ha podido analizar esto. Prueba con otra foto o escríbelo."),
   ai_invalid_response: msg("La IA ha devuelto una respuesta incompleta. Prueba otra vez."),
   rate_limited: msg("Demasiadas peticiones seguidas. Espera un minuto."),
-  unauthorized: msg("El servidor ha rechazado la app: el token (APP_TOKEN y EXPO_PUBLIC_APP_TOKEN) no coincide."),
+  quota_exceeded: msg("Se ha llegado al límite de análisis con IA de hoy. Mañana vuelve a estar disponible; mientras, puedes añadir la comida a mano o con el código de barras."),
+  unauthorized: msg("Falta tu código de acceso o ya no es válido. Ponlo en Más → Servidor y código de acceso."),
   bad_request: msg("El servidor no ha entendido la petición."),
   too_large: msg("La foto es demasiado grande."),
   not_found: msg("No hemos encontrado este producto. Puedes escribirlo o añadirlo a mano."),

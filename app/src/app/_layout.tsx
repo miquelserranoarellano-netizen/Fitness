@@ -1,13 +1,14 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { View } from "react-native";
 import { Loading } from "@/components/screen";
 import { Button, Notice, Txt } from "@/components/ui";
 import { DataProvider } from "@/data/provider";
 import { t } from "@/i18n";
 import { PreferencesProvider, usePreferences } from "@/lib/preferences";
+import { requestPersistentStorage } from "@/lib/web";
 import { space, useColors } from "@/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -25,6 +26,11 @@ function AppShell() {
   const { language } = usePreferences();
   const hideSplash = useCallback(() => {
     SplashScreen.hideAsync().catch(() => undefined);
+  }, []);
+
+  // En la web los datos viven en el navegador: se le pide que no los borre si le falta espacio.
+  useEffect(() => {
+    void requestPersistentStorage();
   }, []);
 
   const base = colors.scheme === "dark" ? DarkTheme : DefaultTheme;
@@ -63,6 +69,7 @@ function AppShell() {
           <Stack.Screen name="revisiones/semana/[week]" options={{ title: t("Informe semanal") }} />
           <Stack.Screen name="revisiones/mes/[id]" options={{ title: t("Informe mensual") }} />
           <Stack.Screen name="perfil" options={{ title: t("Perfil") }} />
+          <Stack.Screen name="servidor" options={{ title: t("Servidor y código de acceso") }} />
           <Stack.Screen name="comida/foto" options={{ title: t("Foto de la comida") }} />
           <Stack.Screen name="comida/texto" options={{ title: t("Escribir la comida") }} />
           <Stack.Screen name="comida/codigo" options={{ title: t("Código de barras") }} />

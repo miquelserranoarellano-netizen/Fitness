@@ -1,6 +1,6 @@
 import { Redirect, router, Stack, useLocalSearchParams } from "expo-router";
 import { Trash2 } from "lucide-react-native";
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Loading, Screen } from "@/components/screen";
 import { Badge, Card, EmptyState, Notice, Stat, StatRow, Txt } from "@/components/ui";
 import { requireProfile } from "@/data/profile";
@@ -8,6 +8,7 @@ import { useMutation, useQuery } from "@/data/provider";
 import { deleteSession, getSession } from "@/data/sessions";
 import { exerciseName, getExercise } from "@/domain/exercises";
 import { msg, t, tn } from "@/i18n";
+import { appAlert } from "@/lib/alert";
 import { dateOf, formatWeekdayDate } from "@/lib/dates";
 import { formatClock, formatDuration, formatRange } from "@/lib/format";
 import { formatNumber, roundDisplay, toDisplayWeight, weightUnit } from "@/lib/units";
@@ -42,7 +43,7 @@ export default function SessionDetail() {
   const day = formatWeekdayDate(dateOf(session.startedAt));
 
   const remove = () =>
-    Alert.alert(t("Borrar esta sesión"), t("Se borrará la sesión con todas sus series y dejará de contar en tu progresión. No se puede deshacer."), [
+    appAlert(t("Borrar esta sesión"), t("Se borrará la sesión con todas sus series y dejará de contar en tu progresión. No se puede deshacer."), [
       { text: t("Cancelar"), style: "cancel" },
       {
         text: t("Borrar"),

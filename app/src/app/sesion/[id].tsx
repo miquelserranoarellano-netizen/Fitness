@@ -3,7 +3,7 @@ import { useKeepAwake } from "expo-keep-awake";
 import { Redirect, router, Stack, useLocalSearchParams } from "expo-router";
 import { ArrowLeftRight, Check, ChevronDown, Lightbulb, SkipForward, Timer, Trash2, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, Text, Vibration, View } from "react-native";
+import { Modal, Pressable, Text, Vibration, View } from "react-native";
 import { Field, Input, NumberStepper, Segmented } from "@/components/form";
 import { Loading, Screen } from "@/components/screen";
 import { Badge, Button, Card, Notice, ProgressBar, StepDot, Txt } from "@/components/ui";
@@ -28,6 +28,7 @@ import { getExercise, type Exercise } from "@/domain/exercises";
 import { suggestNext, type PastPerformance, type Suggestion } from "@/domain/training/progression";
 import { MUSCLE_LABEL, type Units } from "@/domain/types";
 import { msg, t, tn } from "@/i18n";
+import { appAlert } from "@/lib/alert";
 import { formatClock, formatRange, formatRest } from "@/lib/format";
 import { displayLoadStep, formatNumber, fromDisplayWeight, parseDecimal, roundDisplay, toDisplayWeight, weightUnit } from "@/lib/units";
 import { radius, space, tabular, useColors } from "@/theme";
@@ -135,7 +136,7 @@ function LiveSession({ session, units, guidance }: { session: WorkoutSession; un
   };
 
   const discard = () =>
-    Alert.alert(t("Descartar esta sesión"), t("Se borrarán la sesión y todas las series registradas en ella. No se puede deshacer."), [
+    appAlert(t("Descartar esta sesión"), t("Se borrarán la sesión y todas las series registradas en ella. No se puede deshacer."), [
       { text: t("Cancelar"), style: "cancel" },
       {
         text: t("Descartar"),

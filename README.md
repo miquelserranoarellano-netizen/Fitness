@@ -42,3 +42,9 @@ npm test
 
 La app lo busca en el mismo ordenador, puerto 3000; para cambiarlo, `app/.env.example`. Detalles en
 [`server/README.md`](server/README.md).
+
+## En internet (VPS)
+
+La web de la app y el servidor van juntos en un VPS con Docker y HTTPS automático (Caddy): `docker compose up -d
+--build` en la raíz, con el `.env` de [`.env.example`](.env.example). Paso a paso para IONOS, incluido el camino al
+App Store, en [`DESPLIEGUE.md`](DESPLIEGUE.md). Revisión de seguridad en [`SEGURIDAD.md`](SEGURIDAD.md).

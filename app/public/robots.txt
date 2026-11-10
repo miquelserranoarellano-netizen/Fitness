@@ -1,0 +1,3 @@
+# Versión de prueba: fuera de los buscadores.
+User-agent: *
+Disallow: /

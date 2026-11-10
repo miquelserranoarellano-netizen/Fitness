@@ -56,14 +56,19 @@ async function failure(promise: Promise<unknown>): Promise<ApiError> {
 }
 
 describe("peticiones", () => {
-  test("analiza texto: manda idioma, alergias y token, y traduce la respuesta", async () => {
-    const { calls, fetch } = fakeFetch(() => json(serverResult));
-    const api = createApiClient({ baseUrl: "http://192.168.1.20:3000/", appToken: "secreto", fetch });
+  test("analiza texto: manda idioma, alergias y código de acceso, y traduce la respuesta", async () => {
+    const { calls, fetch } = fakeFetch(({ url }) => json(url.endsWith("/health") ? { ok: true, ai: true, auth: true } : serverResult));
+    let code: string | null = " codigo-de-miquel ";
+    const api = createApiClient({ baseUrl: "http://192.168.1.20:3000/", accessCode: () => code, fetch });
     const result = await api.analyzeText("una tostada con huevo", { language: "fr", avoid: ["gluten"] });
 
     expect(calls[0].url).toBe("http://192.168.1.20:3000/analyze-text");
     expect(calls[0].init.method).toBe("POST");
-    expect((calls[0].init.headers as Record<string, string>)["x-app-token"]).toBe("secreto");
+    expect((calls[0].init.headers as Record<string, string>).Authorization).toBe("Bearer codigo-de-miquel");
+    // El código se lee en cada petición: si se cambia en la app, vale desde la siguiente.
+    code = "otro-codigo";
+    await api.health();
+    expect((calls[1].init.headers as Record<string, string>).Authorization).toBe("Bearer otro-codigo");
     expect(JSON.parse(String(calls[0].init.body))).toEqual({ text: "una tostada con huevo", language: "fr", avoid: ["gluten"] });
 
     expect(result.isFood).toBe(true);
@@ -88,12 +93,12 @@ describe("peticiones", () => {
     expect(mealWarnings(result)).toEqual(["gluten", "huevo"]);
   });
 
-  test("sin token no manda la cabecera; el idioma por defecto es el de la app", async () => {
+  test("sin código no manda la cabecera; el idioma por defecto es el de la app", async () => {
     const { calls, fetch } = fakeFetch(() => json(serverResult));
-    const api = createApiClient({ baseUrl: "http://localhost:3000", fetch });
+    const api = createApiClient({ baseUrl: "http://localhost:3000", accessCode: () => "  ", fetch });
     await api.analyzePhoto({ base64: "QUJD", mediaType: "image/jpeg" });
     const headers = calls[0].init.headers as Record<string, string>;
-    expect(headers["x-app-token"]).toBeUndefined();
+    expect(headers.Authorization).toBeUndefined();
     expect(JSON.parse(String(calls[0].init.body))).toEqual({ imageBase64: "QUJD", mediaType: "image/jpeg", language: "es", avoid: [] });
   });
 
@@ -132,9 +137,22 @@ describe("peticiones", () => {
     expect(result.servingGrams).toBeNull();
   });
 
-  test("salud", async () => {
-    const { fetch } = fakeFetch(() => json({ ok: true, ai: false }));
-    expect(await createApiClient({ baseUrl: "http://localhost:3000", fetch }).health()).toEqual({ ok: true, ai: false });
+  test("salud (con o sin aviso de código, para servidores anteriores)", async () => {
+    const old = fakeFetch(() => json({ ok: true, ai: false }));
+    expect(await createApiClient({ baseUrl: "http://localhost:3000", fetch: old.fetch }).health()).toEqual({ ok: true, ai: false, auth: false });
+    const current = fakeFetch(() => json({ ok: true, ai: true, auth: true }));
+    expect(await createApiClient({ baseUrl: "http://localhost:3000", fetch: current.fetch }).health()).toEqual({ ok: true, ai: true, auth: true });
+  });
+
+  test("comprobar el código: quién eres y cuántos análisis llevas", async () => {
+    const { calls, fetch } = fakeFetch(() => json({ name: "marc", used: 3, limit: 40, ai: true }));
+    const api = createApiClient({ baseUrl: "https://fitness.ejemplo.com/api", accessCode: () => "codigo-de-marc", fetch });
+    expect(await api.me()).toEqual({ name: "marc", used: 3, limit: 40, ai: true });
+    expect(calls[0].url).toBe("https://fitness.ejemplo.com/api/me");
+    const denied = fakeFetch(() => json({ code: "unauthorized", error: "Código de acceso incorrecto" }, 401));
+    const error = await failure(createApiClient({ baseUrl: "https://fitness.ejemplo.com/api", fetch: denied.fetch }).me());
+    expect(error.code).toBe("unauthorized");
+    expect(apiErrorMessage(error)).toContain("Más → Servidor");
   });
 });
 
@@ -211,7 +229,7 @@ describe("errores", () => {
     const codes: ApiErrorCode[] = [
       "no_server", "network", "timeout", "cancelled", "bad_response", "prepare", "http",
       "ai_not_configured", "ai_auth_failed", "ai_busy", "ai_bad_request", "ai_unavailable", "ai_timeout",
-      "ai_refused", "ai_invalid_response", "rate_limited", "unauthorized", "bad_request", "too_large",
+      "ai_refused", "ai_invalid_response", "rate_limited", "quota_exceeded", "unauthorized", "bad_request", "too_large",
       "not_found", "lookup_unavailable", "server_error",
     ];
     for (const code of codes) {
@@ -233,6 +251,12 @@ describe("dirección del servidor", () => {
     expect(resolveApiUrl({ devHost: "localhost" })).toBe("http://localhost:3000");
     expect(resolveApiUrl({ devHost: "mi-pc.local:8081", port: 4000 })).toBe("http://mi-pc.local:4000");
     expect(resolveApiUrl({ configured: "", devHost: "exp://10.0.0.5:8081/--/inicio" })).toBe("http://10.0.0.5:3000");
+  });
+
+  test("una ruta («/api») es el mismo dominio de la web; en el móvil no sirve", () => {
+    expect(resolveApiUrl({ configured: "/api/", webOrigin: "https://fitness.ejemplo.com" })).toBe("https://fitness.ejemplo.com/api");
+    expect(resolveApiUrl({ configured: "/api", devHost: "192.168.1.20:8081" })).toBe("http://192.168.1.20:3000");
+    expect(resolveApiUrl({ configured: "/api" })).toBe("");
   });
 
   test("con túnel o sin nada, vacía", () => {

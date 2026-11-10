@@ -1,0 +1,69 @@
+# Despliegue en el VPS. En la raíz del repositorio, con el .env rellenado (copia de .env.example):
+#   docker compose up -d --build
+# Guía completa en DESPLIEGUE.md.
+name: fitness
+
+x-logs: &logs
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  # Servidor de análisis de comidas. No se publica en ningún puerto del VPS: solo Caddy llega a él.
+  api:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      TRUST_PROXY: "1"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5-5}
+      ANTHROPIC_EFFORT: ${ANTHROPIC_EFFORT:-}
+      ACCESS_CODES: ${ACCESS_CODES:?Falta ACCESS_CODES en .env}
+      USDA_API_KEY: ${USDA_API_KEY:-}
+      DAILY_LIMIT_PER_PERSON: ${DAILY_LIMIT_PER_PERSON:-40}
+      DAILY_LIMIT_TOTAL: ${DAILY_LIMIT_TOTAL:-300}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-20}
+      MAX_CONCURRENT_ANALYSES: ${MAX_CONCURRENT_ANALYSES:-4}
+    expose:
+      - "3000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 200
+    <<: *logs
+
+  # Caddy: HTTPS, la web y /api → api.
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Falta DOMAIN en .env}
+      ACME_EMAIL: ${ACME_EMAIL:?Falta ACME_EMAIL en .env}
+    volumes:
+      # Certificados de HTTPS: se conservan entre reinicios.
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 256m
+    <<: *logs
+
+volumes:
+  caddy_data:
+  caddy_config:
