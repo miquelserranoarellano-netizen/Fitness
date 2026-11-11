@@ -47,6 +47,9 @@ function AppShell() {
         <Stack
           key={language}
           screenOptions={{
+            // Desde el SDK 58, en iOS 26 la cabecera es transparente (Liquid Glass) y el contenido pasa por
+            // debajo. Las pantallas están pensadas con la cabecera opaca del tema: se mantiene así.
+            headerTransparent: false,
             headerStyle: { backgroundColor: colors.bg },
             headerTintColor: colors.fg,
             headerTitleStyle: { fontWeight: "600" },

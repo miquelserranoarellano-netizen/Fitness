@@ -37,9 +37,10 @@ antes de enviarse; los datos personales se quedan en el dispositivo.
 
 ## Riesgos aceptados y pendientes
 
-- **7 avisos de dependencias en la app** que solo se van con Expo SDK 58: herramientas de compilación de Expo (no
-  van dentro de la app) y `decode-uri-component` dentro de `expo-router` (una URL mal formada puede colgar la
-  pestaña de quien la abre; no afecta al servidor ni a otros usuarios). Revisar al actualizar el SDK.
+- **5 avisos moderados de dependencias en la app** (tras pasar a Expo SDK 58, el 11/11/2026): `glob` y
+  `minimatch` dentro de `@expo/cli` y `@expo/fingerprint`, herramientas de compilación que no van dentro de la app.
+  Los altos (`decode-uri-component` en `expo-router` y los de compilación del SDK 57) ya no están. Revisar con el
+  próximo SDK.
 - **Los datos de la web viven en el navegador**: si Safari los borra (7 días sin abrir una web que no está en la
   pantalla de inicio) o se limpia el navegador, se pierden. Mitigado con el aviso en «Más», la petición de
   almacenamiento persistente y la exportación; no hay copia en el servidor (decisión de privacidad).

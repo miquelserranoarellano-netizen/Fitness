@@ -3,6 +3,20 @@
 Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
 en curso (fase 5 de 10 hecha).
 
+## Expo SDK 58 (11/11/2026)
+
+Para abrirla con el Expo Go actual del iPhone, que solo admite el SDK 58. React Native 0.88, React 19.3, expo-router
+58 y el resto de módulos con las versiones del SDK (`expo install --fix`); `eslint-config-expo` 58 y `@types/react`
+19.3. `package-lock.json` regenerado.
+- **Cambios en el código:** solo `headerTransparent: false` en la pila (`_layout.tsx`): en iOS 26 la cabecera pasa
+  a ser transparente por defecto y el contenido se metería por debajo. `web.output` ya era `"single"`, así que la
+  web del VPS no cambia. No se usaba ninguna de las API retiradas (`InteractionManager`, `ImageBackground`,
+  importaciones de `react-native/Libraries`, pestañas nativas…).
+- **Node:** el SDK 58 pide Node 22.13+, 24.3+ o 26+ (no la 25).
+- **Comprobado:** `npm run check` (129 pruebas), `expo export` para Android y web y `expo-doctor` (18 de 20: las dos
+  que fallan necesitan conexión con Expo, que no había). `npm audit`: 5 avisos moderados, solo de herramientas de
+  compilación. **Sin probar:** en el iPhone con Expo Go.
+
 ## Cuestionario inicial más corto y sin teclado (11/11/2026)
 
 A petición: el cuestionario pasa de 8 a 6 pasos y todo se elige, sin escribir.
