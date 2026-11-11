@@ -3,6 +3,24 @@
 Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
 en curso (fase 5 de 10 hecha).
 
+## Nutrición nueva, menús, informe editable y CSV (11/11/2026)
+
+A petición de Miquel tras probarla:
+- **Nutrición rehecha** (`(tabs)/nutricion.tsx`, `src/features/nutrition/`): anillo de puntos con lo que queda
+  (verde al llegar al 90-105 % del objetivo, rojo al pasarse), macros del día, agua por vasos, pasos del
+  podómetro del móvil (`expo-sensors`; en iPhone el total del día, en Android desde que se abre la app; a mano en
+  la web), calendario Día/Semana/Mes/Todo con días verdes y rojos, y «Escanea tu primera comida» hasta la
+  primera comida con foto. Objetivo editable: calorías y reparto de macros en % (los gramos cuadran con las
+  calorías); migración 3 para el motivo «manual».
+- **Botón de la cámara** en el centro de la barra de abajo: abre la cámara directamente desde cualquier pantalla.
+- **Regla de día cumplido**: entre el 90 % y el 105 % del objetivo de ese día (`dayStatus`, `GOOD_RANGE`).
+- **Menús:** fuera «Historial» (lo cubre Análisis; el detalle de cada sesión sigue) y «Revisiones» del menú
+  (siguen como aviso en Inicio cuando tocan).
+- **Informe inicial editable:** «Cambiar» en datos/objetivo y en experiencia/días/material; al guardar se
+  rehacen rutina y calorías (`updateProfileAndReplan`) y el informe enseña lo vigente.
+- **CSV** (Perfil → Tus datos): resumen diario, comidas, entrenamientos y medidas, con «;» y coma decimal.
+- **Comprobado:** `npm run check` (145 pruebas). **Por probar en el móvil:** podómetro y botón de la cámara.
+
 ## Expo SDK 58 (11/11/2026)
 
 Para abrirla con el Expo Go actual del iPhone, que solo admite el SDK 58. React Native 0.88, React 19.3, expo-router

@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { BarChart3, CalendarClock, ClipboardCheck, FileText, KeyRound, UserRound } from "lucide-react-native";
+import { BarChart3, FileText, KeyRound, UserRound } from "lucide-react-native";
 import { View } from "react-native";
 import { Segmented } from "@/components/form";
 import { Screen } from "@/components/screen";
@@ -27,8 +27,6 @@ export default function More() {
     <Screen tab title={t("Más")}>
       <Card>
         <LinkRow icon={BarChart3} title={t("Análisis")} subtitle={t("Puntos fuertes y débiles por grupo muscular")} onPress={() => router.push("/analisis")} />
-        <LinkRow icon={CalendarClock} title={t("Historial")} subtitle={t("Sesiones y progresión de cada ejercicio")} onPress={() => router.push("/historial")} />
-        <LinkRow icon={ClipboardCheck} title={t("Revisiones")} subtitle={t("Revisión semanal, informes mensuales y siguiente bloque")} onPress={() => router.push("/revisiones")} />
         <LinkRow icon={FileText} title={t("Informe inicial")} subtitle={t("Tu punto de partida")} onPress={() => router.push("/informe-inicial")} />
         <LinkRow icon={UserRound} title={t("Perfil")} subtitle={t("Datos, objetivos, limitaciones, recordatorios y tus datos")} onPress={() => router.push("/perfil")} />
         <LinkRow icon={KeyRound} title={t("Servidor y código de acceso")} subtitle={t("Para analizar comidas con IA y buscar códigos de barras")} onPress={() => router.push("/servidor")} />

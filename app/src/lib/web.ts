@@ -8,7 +8,12 @@ export const isWeb = Platform.OS === "web";
 
 /** Descarga un archivo JSON (en la web no hay carpeta de la app ni menú de compartir). */
 export function downloadJson(fileName: string, data: unknown): void {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  downloadText(fileName, JSON.stringify(data, null, 2), "application/json");
+}
+
+/** Descarga un archivo de texto (JSON, CSV…) en el navegador. */
+export function downloadText(fileName: string, content: string, type: string): void {
+  const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

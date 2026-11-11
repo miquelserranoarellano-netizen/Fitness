@@ -5,6 +5,7 @@ import type { Queryable } from "./types";
  * - 1: el de la web (`smart-fitness-coach/src/db/migrations`) traducido a SQLite, sin cuentas ni sesiones
  *   (un usuario por teléfono) y con `food_entries` como hueco para las comidas.
  * - 2: la parte de SnapCal (alimentos de cada comida, favoritas, agua, pasos y preferencias de dieta).
+ * - 3: objetivo de calorías y macros puesto a mano (motivo «manual»).
  *
  * Una migración aplicada no se edita: se añade otra al final de la lista.
  */
@@ -338,6 +339,28 @@ create table step_logs (
 -- Perfil: peso deseado (opcional) y reparto de macros (normal, bajo en hidratos o cetogénico).
 alter table profiles add column target_weight_kg real check (target_weight_kg is null or target_weight_kg between 30 and 300);
 alter table profiles add column macro_style text not null default 'standard' check (macro_style in ('standard', 'lowcarb', 'keto'));
+`,
+  },
+  {
+    version: 3,
+    name: "objetivo_manual",
+    // Objetivo de calorías y macros puesto a mano (motivo «manual»). SQLite no deja cambiar un CHECK:
+    // se rehace la tabla con los mismos datos.
+    sql: `
+create table nutrition_targets_new (
+  id text primary key,
+  effective_from text not null,
+  calories integer not null check (calories between 1000 and 7000),
+  protein_g integer not null,
+  carbs_g integer not null,
+  fat_g integer not null,
+  reason text not null check (reason in ('initial', 'adjustment', 'profile_change', 'manual')),
+  method text not null,
+  created_at text not null
+);
+insert into nutrition_targets_new select id, effective_from, calories, protein_g, carbs_g, fat_g, reason, method, created_at from nutrition_targets order by rowid;
+drop table nutrition_targets;
+alter table nutrition_targets_new rename to nutrition_targets;
 `,
   },
 ];

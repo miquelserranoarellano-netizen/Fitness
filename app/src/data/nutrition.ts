@@ -1,4 +1,5 @@
 import { json, nowIso, parseJson, type Queryable } from "@/db/types";
+import type { MacroSplit } from "@/domain/nutrition/macros";
 import { estimateNutrition, type NutritionEstimate, type NutritionInput } from "@/domain/nutrition/targets";
 import { newId } from "@/lib/id";
 import type { Profile } from "./profile";
@@ -16,9 +17,12 @@ export type NutritionTarget = {
   proteinG: number;
   carbsG: number;
   fatG: number;
-  reason: "initial" | "adjustment" | "profile_change";
-  /** Estimación de partida y, en los ajustes, la decisión que los motivó. */
-  method: NutritionEstimate & { weightKg: number; decision?: { title: string; reason: string; deltaKcal: number } };
+  reason: "initial" | "adjustment" | "profile_change" | "manual";
+  /**
+   * Estimación de partida y, en los ajustes, la decisión que los motivó. En los puestos a mano, `manual`
+   * guarda el reparto elegido (y la estimación de la que se partía).
+   */
+  method: NutritionEstimate & { weightKg: number; decision?: { title: string; reason: string; deltaKcal: number }; manual?: MacroSplit };
   createdAt: string;
 };
 
@@ -94,11 +98,11 @@ const mapTarget = (row: TargetRow): NutritionTarget => ({
 
 /** Objetivos, del más reciente al más antiguo. */
 export async function listNutritionTargets(db: Queryable): Promise<NutritionTarget[]> {
-  const rows = await db.all<TargetRow>("select * from nutrition_targets order by effective_from desc, created_at desc");
+  const rows = await db.all<TargetRow>("select * from nutrition_targets order by effective_from desc, created_at desc, rowid desc");
   return rows.map(mapTarget);
 }
 
 export async function getCurrentTarget(db: Queryable): Promise<NutritionTarget | null> {
-  const row = await db.get<TargetRow>("select * from nutrition_targets order by effective_from desc, created_at desc limit 1");
+  const row = await db.get<TargetRow>("select * from nutrition_targets order by effective_from desc, created_at desc, rowid desc limit 1");
   return row ? mapTarget(row) : null;
 }

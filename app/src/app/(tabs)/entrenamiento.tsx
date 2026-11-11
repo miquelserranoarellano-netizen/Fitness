@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Clock, Dumbbell, History, Play } from "lucide-react-native";
+import { Clock, Dumbbell, Play } from "lucide-react-native";
 import { View } from "react-native";
 import { RangeBars } from "@/components/charts";
 import { Loading, Screen } from "@/components/screen";
@@ -174,9 +174,6 @@ export default function Training() {
         </View>
       </Card>
 
-      <Card>
-        <LinkRow icon={History} title={t("Historial de sesiones")} subtitle={t("Tus entrenamientos y la progresión de cada ejercicio")} onPress={() => router.push("/historial")} />
-      </Card>
     </Screen>
   );
 }

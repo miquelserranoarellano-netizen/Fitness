@@ -131,3 +131,28 @@ export function formatTime(instant: string): string {
   const value = new Date(instant);
   return `${pad(value.getHours())}:${pad(value.getMinutes())}`;
 }
+
+/** Primer día del mes de una fecha («2026-11-11» → «2026-11-01»). */
+export function monthStart(date: string): string {
+  return `${date.slice(0, 7)}-01`;
+}
+
+/** Primer día del mes `months` meses antes o después. */
+export function addMonths(date: string, months: number): string {
+  const { year, month } = parts(date);
+  const total = year * 12 + month + months;
+  return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}-01`;
+}
+
+/** Último día del mes de una fecha. */
+export function monthEnd(date: string): string {
+  return addDays(addMonths(date, 1), -1);
+}
+
+/** «noviembre de 2026» · «November 2026» · «novembre 2026» · «November 2026» */
+export function formatMonth(date: string): string {
+  const { month, year } = parts(date);
+  const language = getLanguage();
+  const name = NAMES[language].months[month]!;
+  return language === "es" ? `${name} de ${year}` : `${name.charAt(0).toUpperCase()}${name.slice(1)} ${year}`;
+}

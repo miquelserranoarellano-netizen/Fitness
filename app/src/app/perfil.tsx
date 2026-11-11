@@ -8,6 +8,7 @@ import { Field, Segmented, Toggle } from "@/components/form";
 import { Loading, Screen } from "@/components/screen";
 import { Badge, Button, Card, CardHeader, Collapsible, Notice, Txt } from "@/components/ui";
 import { getActiveBlock } from "@/data/blocks";
+import { CSV_KINDS, exportCsv, type CsvKind } from "@/data/csv";
 import { exportAllData } from "@/data/export";
 import { deleteAllMealPhotos } from "@/data/meal-photos";
 import { deleteAllPhotos } from "@/data/photos";
@@ -32,7 +33,7 @@ import { msg, t } from "@/i18n";
 import { appAlert } from "@/lib/alert";
 import { formatDate, today } from "@/lib/dates";
 import { clearAppCaches } from "@/lib/temp-files";
-import { downloadJson, isWeb } from "@/lib/web";
+import { downloadJson, downloadText, isWeb } from "@/lib/web";
 import { radius, space, useColors } from "@/theme";
 
 const SECTIONS: { id: StepId; title: string; summary: string; render: (props: SectionProps) => ReactNode }[] = [
@@ -300,10 +301,43 @@ function Limitations({ limitations }: { limitations: Limitation[] }) {
   );
 }
 
+const CSV_LABEL: Record<CsvKind, string> = {
+  daily: msg("Resumen diario"),
+  meals: msg("Comidas"),
+  workouts: msg("Entrenamientos"),
+  measurements: msg("Medidas"),
+};
+
+/** Guarda un texto en un archivo y abre el menú de compartir (en la web, lo descarga). */
+async function shareText(fileName: string, content: string, mimeType: string) {
+  if (isWeb) return downloadText(fileName, content, mimeType);
+  const file = new File(Paths.cache, fileName);
+  file.create({ overwrite: true });
+  file.write(content);
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(file.uri, { mimeType, dialogTitle: t("Exportar mis datos") });
+  } else {
+    appAlert(t("Exportación lista"), t("Se ha guardado en: {ruta}", { ruta: file.uri }));
+  }
+}
+
 function DataCard() {
   const colors = useColors();
   const { run, pending } = useMutation();
   const [exporting, setExporting] = useState(false);
+  const [csvKind, setCsvKind] = useState<CsvKind>("daily");
+
+  const exportSpreadsheet = async () => {
+    setExporting(true);
+    try {
+      const csv = await run((db) => exportCsv(db, csvKind, today()));
+      if (csv) await shareText(csv.fileName, csv.content, "text/csv");
+    } catch (cause) {
+      appAlert(t("No se ha podido exportar"), cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const exportData = async () => {
     setExporting(true);
@@ -362,8 +396,15 @@ function DataCard() {
       />
       <View style={{ gap: space.md }}>
         <Button variant="secondary" icon={Download} onPress={exportData} loading={exporting}>
-          {t("Exportar mis datos")}
+          {t("Exportar todo (JSON, copia de seguridad)")}
         </Button>
+        <View style={{ gap: space.sm, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.line }}>
+          <Txt variant="label">{t("Exportar a CSV (Excel, Google Sheets)")}</Txt>
+          <Segmented columns={2} options={CSV_KINDS.map((kind) => ({ value: kind, label: t(CSV_LABEL[kind]) }))} value={csvKind} onChange={setCsvKind} />
+          <Button variant="secondary" icon={Download} onPress={exportSpreadsheet} loading={exporting}>
+            {t("Exportar {datos} en CSV", { datos: t(CSV_LABEL[csvKind]).toLowerCase() })}
+          </Button>
+        </View>
         <View style={{ paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.line }}>
           <Button variant="danger" icon={Trash2} onPress={deleteEverything} loading={pending}>
             {t("Borrar todos mis datos")}
