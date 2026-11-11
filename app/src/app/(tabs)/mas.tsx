@@ -55,7 +55,7 @@ export default function More() {
       </Card>
 
       <Txt variant="tiny" style={{ textAlign: "center" }}>
-        {isWeb ? t("Smart Fitness Coach · tus datos se guardan solo en este navegador") : t("Smart Fitness Coach · tus datos se guardan solo en este teléfono")}
+        {isWeb ? t("IKYNDO · tus datos se guardan solo en este navegador") : t("IKYNDO · tus datos se guardan solo en este teléfono")}
       </Txt>
     </Screen>
   );

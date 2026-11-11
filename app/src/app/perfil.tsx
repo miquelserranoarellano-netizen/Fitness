@@ -346,7 +346,7 @@ function DataCard() {
     try {
       const data = await run((db) => exportAllData(db));
       if (!data) return;
-      const fileName = `smart-fitness-coach-${today()}.json`;
+      const fileName = `ikyndo-${today()}.json`;
       if (isWeb) return downloadJson(fileName, data);
       const file = new File(Paths.cache, fileName);
       file.create({ overwrite: true });

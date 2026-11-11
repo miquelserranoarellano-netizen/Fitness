@@ -45,7 +45,7 @@ async function firstDate(db: Queryable, today: string): Promise<string> {
 
 /** Un CSV con sus datos y el nombre de archivo propuesto. */
 export async function exportCsv(db: Queryable, kind: CsvKind, today: string): Promise<{ fileName: string; content: string }> {
-  const fileName = (name: string) => `smart-fitness-coach-${name}-${today}.csv`;
+  const fileName = (name: string) => `ikyndo-${name}-${today}.csv`;
 
   if (kind === "daily") {
     const from = await firstDate(db, today);

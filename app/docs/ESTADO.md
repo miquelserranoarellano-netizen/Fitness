@@ -12,6 +12,9 @@ en curso (fase 5 de 10 hecha).
   acabar la prueba (quitar la renovación, exportar los datos antes de apagar).
 - **Sin Expo Go:** fuera de las guías y scripts el uso con Expo Go (QR, WSL «mirrored», `npm run tunnel`). El código
   no cambia: la app del App Store sigue saliendo de aquí con EAS.
+- **Nombre:** la app se llama IKYNDO (`app.json`, web, manifiesto, textos en los cuatro idiomas y nombres de los
+  archivos exportados), con iconos sacados de la K del logo sobre negro. `slug` y `scheme` siguen igual para no
+  romper la app del App Store del fork.
 - **Comprobado:** la portada en local con las mismas cabeceras que Caddy (sin errores de CSP), en escritorio y en
   móvil, en claro y en oscuro. **Sin probar:** Caddy en el VPS (aquí no hay Docker).
 
