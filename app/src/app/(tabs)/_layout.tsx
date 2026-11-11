@@ -6,7 +6,7 @@ import { CONTENT_MAX_WIDTH } from "@/components/screen";
 import { t } from "@/i18n";
 import { useColors } from "@/theme";
 
-/** Barra inferior: las cinco secciones principales, como en la web en el móvil. */
+/** Barra inferior: las cinco secciones principales. En Nutrición hay además un botón flotante de cámara. */
 export default function TabsLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -39,3 +39,4 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+

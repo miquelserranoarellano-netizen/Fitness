@@ -126,24 +126,55 @@ export function firstLogDate(byDate: Record<string, DayTotals>): string | null {
 
 export type DayStatus = "none" | "good" | "bad";
 
+/** Un día está «cumplido» si las calorías quedan entre el 90 % y el 105 % del objetivo. */
+export const GOOD_RANGE = { min: 0.9, max: 1.05 } as const;
+
+const inRange = (calories: number, goal: number) => calories >= goal * GOOD_RANGE.min && calories <= goal * GOOD_RANGE.max;
+
 /**
- * Cómo fue un día respecto al objetivo de calorías (de SnapCal):
- * - good: con comidas registradas y sin pasarse más de un 10 %.
- * - bad: se pasó más de un 10 %, o un día ya terminado quedó por debajo de la mitad del objetivo, o no
- *   se registró nada desde que se empezó a usar.
- * - none: futuro, hoy sin registros todavía, o anterior al primer registro.
+ * Cómo fue un día respecto al objetivo de calorías:
+ * - good: entre el 90 % y el 105 % del objetivo (hoy también, en cuanto se llega).
+ * - bad: un día ya terminado fuera de ese margen o sin nada registrado desde que se empezó a usar; hoy,
+ *   solo si ya se ha pasado del 105 %.
+ * - none: futuro, hoy todavía por debajo del 90 %, o anterior al primer registro.
  */
 export function dayStatus(total: DayTotals | undefined, goal: number, context: { date: string; today: string; start: string | null }): DayStatus {
   const { date, today, start } = context;
   if (date > today) return "none";
   const past = date < today;
   if (total && total.count > 0) {
-    if (total.calories > goal * 1.1) return "bad";
-    if (past && total.calories < goal * 0.5) return "bad";
-    return "good";
+    if (inRange(total.calories, goal)) return "good";
+    if (total.calories > goal * GOOD_RANGE.max) return "bad";
+    return past ? "bad" : "none";
   }
   if (past && start && date > start) return "bad";
   return "none";
+}
+
+/**
+ * Objetivo de calorías vigente en una fecha: el último que empezó ese día o antes. Si la fecha es
+ * anterior a todos, el más antiguo (así los primeros días también se pueden valorar).
+ */
+export function goalOn(targets: { effectiveFrom: string; calories: number }[], date: string): number | null {
+  if (targets.length === 0) return null;
+  const sorted = [...targets].sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? -1 : a.effectiveFrom > b.effectiveFrom ? 1 : 0));
+  let goal = sorted[0]!.calories;
+  for (const target of sorted) {
+    if (target.effectiveFrom <= date) goal = target.calories;
+    else break;
+  }
+  return goal;
+}
+
+/** Resumen de un periodo: días cumplidos, fallados, registrados y media de calorías de los días con registro. */
+export function periodSummary(statuses: { status: DayStatus; calories: number; count: number }[]) {
+  const logged = statuses.filter((day) => day.count > 0);
+  return {
+    good: statuses.filter((day) => day.status === "good").length,
+    bad: statuses.filter((day) => day.status === "bad").length,
+    logged: logged.length,
+    averageCalories: logged.length > 0 ? Math.round(logged.reduce((total, day) => total + day.calories, 0) / logged.length) : null,
+  };
 }
 
 /** Días seguidos con al menos una comida. Si hoy aún no hay nada, la racha cuenta desde ayer. */

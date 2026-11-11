@@ -47,6 +47,9 @@ function AppShell() {
         <Stack
           key={language}
           screenOptions={{
+            // Desde el SDK 58, en iOS 26 la cabecera es transparente (Liquid Glass) y el contenido pasa por
+            // debajo. Las pantallas están pensadas con la cabecera opaca del tema: se mantiene así.
+            headerTransparent: false,
             headerStyle: { backgroundColor: colors.bg },
             headerTintColor: colors.fg,
             headerTitleStyle: { fontWeight: "600" },
@@ -61,7 +64,6 @@ function AppShell() {
           <Stack.Screen name="informe-inicial" options={{ title: t("Informe inicial") }} />
           <Stack.Screen name="sesion/[id]" options={{ title: t("Entrenamiento"), gestureEnabled: false }} />
           <Stack.Screen name="ejercicio/[id]" options={{ title: t("Ejercicio") }} />
-          <Stack.Screen name="historial/index" options={{ title: t("Historial") }} />
           <Stack.Screen name="historial/[id]" options={{ title: t("Sesión") }} />
           <Stack.Screen name="analisis" options={{ title: t("Análisis") }} />
           <Stack.Screen name="revisiones/index" options={{ title: t("Revisiones") }} />

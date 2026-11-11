@@ -248,7 +248,8 @@ export function parseAnalysisResponse(response) {
 // Los textos de la respuesta vienen de la IA y de bases de datos abiertas: siempre acotados.
 const MAX_QUERY_CHARS = 80;
 const MAX_NAME_CHARS = 120;
-const MAX_NOTES_CHARS = 400;
+/** Las notas de la IA se enseñan tal cual en la app: con tope, por si el modelo se alarga. */
+export const MAX_NOTES_CHARS = 400;
 
 export const clampNum = (value, min, max, fallback = 0) => {
   const number = Number(value);

@@ -1,3 +1,4 @@
+import { labels } from "@/i18n";
 import type { MeasureProgress } from "../body/measurements";
 import { exerciseName } from "../exercises";
 import type { VolumeRange } from "../training/plan";
@@ -31,13 +32,13 @@ export type Finding = {
   successIndicator: string;
 };
 
-export const FINDING_LABEL: Record<FindingKind, string> = {
+export const FINDING_LABEL: Record<FindingKind, string> = labels({
   confirmed: "Debilidad confirmada por rendimiento",
   aesthetic: "Posible área de mejora estética",
   insufficient: "Información insuficiente",
   strength: "Punto fuerte",
   on_track: "Evoluciona con normalidad",
-};
+});
 
 /** Perímetro que mejor refleja el tamaño de cada grupo muscular (si lo hay). */
 export const MUSCLE_MEASURE: Partial<Record<Muscle, Measure>> = {

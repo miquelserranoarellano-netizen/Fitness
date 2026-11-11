@@ -24,6 +24,7 @@ import {
   startNextBlock,
   submitCheckin,
   updateProfile,
+  updateProfileAndReplan,
 } from "./services";
 import {
   deleteSet,
@@ -86,6 +87,29 @@ describe("cuestionario inicial", () => {
     expect((await completeOnboarding(db, onboardingInput())).ok).toBe(true);
     await expect(completeOnboarding(db, onboardingInput())).rejects.toThrow("ya estaba completado");
     expect(await listBlocks(db)).toHaveLength(1);
+  });
+});
+
+describe("informe inicial editable", () => {
+  it("cambiar los días y el objetivo rehace la rutina y las calorías", async () => {
+    expect((await completeOnboarding(db, onboardingInput())).ok).toBe(true);
+    const before = (await getCurrentTarget(db))!;
+    const { weightKg: _w, measurements: _m, limitations: _l, ...profile } = onboardingInput();
+    const result = await updateProfileAndReplan(db, { ...profile, daysPerWeek: 3, primaryGoal: "fat_loss" });
+    expect(result).toMatchObject({ ok: true, data: { planRegenerated: true } });
+    const block = (await getActiveBlock(db))!;
+    expect(block.number).toBe(2);
+    expect(block.days).toHaveLength(3);
+    const after = (await getCurrentTarget(db))!;
+    expect(after.reason).toBe("profile_change");
+    expect(after.calories).toBeLessThan(before.calories);
+  });
+
+  it("no guarda nada si los datos no son válidos", async () => {
+    expect((await completeOnboarding(db, onboardingInput())).ok).toBe(true);
+    const { weightKg: _w, measurements: _m, limitations: _l, ...profile } = onboardingInput();
+    expect((await updateProfileAndReplan(db, { ...profile, ageYears: 5 })).ok).toBe(false);
+    expect((await getActiveBlock(db))!.number).toBe(1);
   });
 });
 

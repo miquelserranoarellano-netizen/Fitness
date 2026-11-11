@@ -7,10 +7,10 @@ import { Button, Card, Notice, ProgressBar, Txt } from "@/components/ui";
 import { clearState, getState, setState } from "@/data/profile";
 import { useData, useMutation, useQuery } from "@/data/provider";
 import { completeOnboarding } from "@/data/services";
-import { EQUIPMENT_LABEL, GOAL_LABEL, MEASURES, MUSCLE_LABEL } from "@/domain/types";
+import { DIET_LABEL, EQUIPMENT_LABEL, GOAL_LABEL, MUSCLE_LABEL } from "@/domain/types";
 import { useImportCopy } from "@/features/backup/import-copy";
 import { emptyDraft, onboardingFromDraft, validateStep, type Draft, type StepId } from "@/features/onboarding/draft";
-import { AvailabilitySection, ExperienceSection, GoalsSection, HabitsSection, MeasuresSection, NutritionSection, PersonalSection } from "@/features/profile/sections";
+import { AvailabilitySection, ExperienceSection, GoalsSection, HabitsSection, NutritionSection, PersonalSection } from "@/features/profile/sections";
 import { msg, t, tn } from "@/i18n";
 import { lengthUnit, weightUnit } from "@/lib/units";
 import { isWeb } from "@/lib/web";
@@ -23,10 +23,10 @@ const STEPS: Step[] = [
   { id: "personal", title: msg("Empecemos por ti"), lead: msg("Unos datos básicos para calcular tus necesidades. Podrás cambiarlos cuando quieras.") },
   { id: "goals", title: msg("¿Qué quieres conseguir?"), lead: msg("Tu objetivo decide cómo reparto el entrenamiento y la alimentación.") },
   { id: "experience", title: msg("Tu experiencia"), lead: msg("Para ajustar el volumen, la intensidad y la dificultad técnica de los ejercicios.") },
-  // Ejercicios favoritos o a evitar, marcas, rutinas anteriores y lesiones se añaden después, en Perfil.
+  // Solo lo que hace falta para la rutina y las calorías, y todo se elige sin escribir. El nombre, las medidas,
+  // las marcas, las lesiones, el sueño, el estrés y los gustos de comida se añaden después, en Perfil y Cuerpo.
   { id: "availability", title: msg("Tiempo y material"), lead: msg("La distribución de la rutina depende de los días y el tiempo que tengas de verdad.") },
-  { id: "measures", title: msg("Medidas corporales"), lead: msg("Son la mejor forma de saber qué crece y qué se estanca. Se repiten una vez al mes.") },
-  { id: "habits", title: msg("Tu día a día"), lead: msg("El descanso y la actividad diaria condicionan lo que puedes recuperar y lo que gastas.") },
+  { id: "habits", title: msg("Tu día a día"), lead: msg("Tu actividad diaria cambia las calorías que gastas.") },
   { id: "nutrition", title: msg("Alimentación"), lead: msg("Sirve para tus objetivos y para avisarte al registrar comidas.") },
   { id: "summary", title: msg("Todo listo"), lead: msg("Revisa el resumen. Con estos datos prepararé tu informe inicial, tu rutina y tus objetivos nutricionales.") },
 ];
@@ -74,7 +74,7 @@ function Wizard({ initial }: { initial: Saved | null }) {
   const next = () => {
     if (step.id !== "summary" && step.id !== "intro") {
       const problem = validateStep(step.id, draft);
-      if (problem) return setError(problem);
+      if (problem) return setError(t(problem));
     }
     go(index + 1);
   };
@@ -85,7 +85,7 @@ function Wizard({ initial }: { initial: Saved | null }) {
       const problem = validateStep(candidate.id, draft);
       if (problem) {
         go(stepIndex);
-        return setError(problem);
+        return setError(t(problem));
       }
     }
     const result = await run((database) => completeOnboarding(database, onboardingFromDraft(draft)));
@@ -126,13 +126,12 @@ function Wizard({ initial }: { initial: Saved | null }) {
       {index > 0 ? <ProgressBar value={index / counted} /> : null}
 
       {step.id === "intro" && <Intro />}
-      {step.id === "personal" && <PersonalSection {...section} />}
-      {step.id === "goals" && <GoalsSection {...section} />}
+      {step.id === "personal" && <PersonalSection {...section} brief />}
+      {step.id === "goals" && <GoalsSection {...section} brief />}
       {step.id === "experience" && <ExperienceSection {...section} brief />}
       {step.id === "availability" && <AvailabilitySection {...section} />}
-      {step.id === "measures" && <MeasuresSection {...section} />}
-      {step.id === "habits" && <HabitsSection {...section} />}
-      {step.id === "nutrition" && <NutritionSection {...section} />}
+      {step.id === "habits" && <HabitsSection {...section} brief />}
+      {step.id === "nutrition" && <NutritionSection {...section} brief />}
       {step.id === "summary" && <Summary draft={draft} onEdit={go} />}
 
       {error ? <Notice tone="danger">{error}</Notice> : null}
@@ -199,13 +198,11 @@ function Point({ title, children }: { title: string; children: string }) {
 
 function Summary({ draft, onEdit }: { draft: Draft; onEdit: (index: number) => void }) {
   const colors = useColors();
-  const measured = MEASURES.filter((measure) => draft.measures[measure].trim() !== "").length;
   const at = (id: StepId) => STEPS.findIndex((step) => step.id === id);
   const rows: { label: string; value: string; step: number }[] = [
     {
       label: t("Tú"),
-      value: t("{nombre} · {edad} años · {altura} {unidadAltura} · {peso} {unidadPeso}", {
-        nombre: draft.displayName,
+      value: t("{edad} años · {altura} {unidadAltura} · {peso} {unidadPeso}", {
         edad: draft.age,
         altura: draft.height,
         unidadAltura: lengthUnit(draft.units),
@@ -231,13 +228,8 @@ function Summary({ draft, onEdit }: { draft: Draft; onEdit: (index: number) => v
     },
     { label: t("Material"), value: draft.equipment.map((item) => EQUIPMENT_LABEL[item].toLowerCase()).join(", "), step: at("availability") },
     {
-      label: t("Medidas"),
-      value: measured === 0 ? t("Sin medidas por ahora (podrás añadirlas después)") : t("{n} de {total} completadas", { n: measured, total: MEASURES.length }),
-      step: at("measures"),
-    },
-    {
       label: t("Alimentación"),
-      value: `${tn(draft.mealsPerDay ?? 0, "{n} comida al día", "{n} comidas al día")}${
+      value: `${draft.dietPreference ? DIET_LABEL[draft.dietPreference] : ""}${
         draft.allergies.length > 0 ? ` · ${tn(draft.allergies.length, "{n} alergia indicada", "{n} alergias indicadas")}` : ""
       }`,
       step: at("nutrition"),
@@ -270,7 +262,7 @@ function Summary({ draft, onEdit }: { draft: Draft; onEdit: (index: number) => v
       </View>
       <Notice tone="warning" title={t("Si tienes alguna lesión o molestia")}>
         {t(
-          "Añádela en Más → Perfil, en «Lesiones, molestias y limitaciones», antes de entrenar y genera la rutina de nuevo, para que evite los ejercicios que cargan esa zona. En Perfil también puedes añadir tus marcas, rutinas anteriores y los ejercicios que te gustan o prefieres evitar.",
+          "Añádela en Más → Perfil, en «Lesiones, molestias y limitaciones», antes de entrenar y genera la rutina de nuevo, para que evite los ejercicios que cargan esa zona. En Perfil también puedes poner tu nombre, tus marcas, los ejercicios que te gustan o prefieres evitar y tus gustos de comida; las medidas, en «Cuerpo».",
         )}
       </Notice>
       <Notice title={t("Qué voy a hacer con estos datos")}>

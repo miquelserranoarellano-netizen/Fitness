@@ -1,29 +1,44 @@
 import { router } from "expo-router";
-import { ArrowRight } from "lucide-react-native";
-import { View } from "react-native";
+import { ArrowRight, Pencil } from "lucide-react-native";
+import { useState } from "react";
+import { Modal, Pressable, ScrollView, View } from "react-native";
 import { RangeBars } from "@/components/charts";
 import { Loading, Screen } from "@/components/screen";
 import { Button, Card, CardHeader, Notice, Stat, StatRow, Txt } from "@/components/ui";
-import { getBlockByNumber } from "@/data/blocks";
+import { getActiveBlock, getBlockByNumber } from "@/data/blocks";
 import { listMeasurements, listWeights } from "@/data/body";
 import { listNutritionTargets } from "@/data/nutrition";
-import { getLimitations, requireProfile } from "@/data/profile";
-import { useQuery } from "@/data/provider";
+import { getLimitations, requireProfile, type Profile } from "@/data/profile";
+import { useMutation, useQuery } from "@/data/provider";
+import { updateProfileAndReplan } from "@/data/services";
 import { exerciseName } from "@/domain/exercises";
 import { SPLIT_LABEL, estimateSessionMinutes } from "@/domain/training/plan";
 import { GOAL_LABEL, LEVEL_LABEL, MEASURES, MEASURE_LABEL, MUSCLES, MUSCLE_LABEL } from "@/domain/types";
+import { draftFromProfile, profileFromDraft, validateStep, type Draft, type StepId } from "@/features/onboarding/draft";
+import { AvailabilitySection, ExperienceSection, GoalsSection, PersonalSection } from "@/features/profile/sections";
 import { t } from "@/i18n";
 import { formatDate } from "@/lib/dates";
 import { formatRange } from "@/lib/format";
 import { formatLength, formatNumber, formatSigned, formatWeight } from "@/lib/units";
 import { radius, space, useColors } from "@/theme";
 
-/** El punto de partida tal como quedó al terminar el cuestionario. */
+/** Partes del perfil que se pueden cambiar desde el informe. */
+type EditPart = "you" | "training";
+
+const PART_STEPS: Record<EditPart, StepId[]> = { you: ["personal", "goals"], training: ["experience", "availability"] };
+
+/**
+ * El informe con el que empiezas: tu punto de partida, la rutina y las calorías. Cada parte se puede cambiar
+ * («Cambiar»): al guardar se vuelven a calcular la rutina y el objetivo, y el informe enseña lo vigente.
+ */
 export default function InitialReport() {
   const colors = useColors();
+  const { run, pending } = useMutation();
+  const [editing, setEditing] = useState<EditPart | null>(null);
+  const [message, setMessage] = useState<{ tone: "positive" | "warning" | "danger"; text: string } | null>(null);
   const query = useQuery(async (db) => ({
     profile: await requireProfile(db),
-    block: await getBlockByNumber(db, 1),
+    block: (await getActiveBlock(db)) ?? (await getBlockByNumber(db, 1)),
     targets: await listNutritionTargets(db),
     weights: await listWeights(db),
     measurements: await listMeasurements(db),
@@ -31,7 +46,8 @@ export default function InitialReport() {
   }));
   if (!query.data) return <Loading error={query.error} onRetry={query.reload} />;
   const { profile, block, targets, weights, measurements, limitations } = query.data;
-  const nutrition = targets.find((target) => target.reason === "initial") ?? targets[targets.length - 1] ?? null;
+  // Lo vigente: el último objetivo (los cambios hechos aquí lo recalculan).
+  const nutrition = targets[0] ?? null;
   const firstWeight = weights[0] ?? null;
   const firstMeasures = measurements[0] ?? null;
   const known = firstMeasures ? MEASURES.filter((measure) => firstMeasures.values[measure] !== null) : [];
@@ -57,8 +73,10 @@ export default function InitialReport() {
         </Button>
       }
     >
+      {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+
       <Card>
-        <CardHeader title={t("Punto de partida")} />
+        <CardHeader title={t("Punto de partida")} action={<EditButton onPress={() => setEditing("you")} />} />
         <StatRow>
           <Stat label={t("Objetivo")} value={<Txt variant="h2">{GOAL_LABEL[profile.primaryGoal]}</Txt>} />
           {firstWeight ? <Stat label={t("Peso inicial")} value={formatWeight(firstWeight.kg, units)} /> : null}
@@ -76,8 +94,9 @@ export default function InitialReport() {
         <>
           <Card>
             <CardHeader
+              action={<EditButton onPress={() => setEditing("training")} />}
               title={t("Tu rutina: {rutina}", { rutina: SPLIT_LABEL[block.split] })}
-              description={t("Primer bloque de {semanas} semanas. {progresion}", { semanas: block.weeksPlanned, progresion: block.rationale.expectedProgression })}
+              description={t("Bloque {n} de {semanas} semanas. {progresion}", { n: block.number, semanas: block.weeksPlanned, progresion: block.rationale.expectedProgression })}
             />
             <View style={{ gap: space.md }}>
               {block.rationale.rationale.map((item) => (
@@ -139,7 +158,8 @@ export default function InitialReport() {
       {nutrition ? (
         <Card>
           <CardHeader
-            title={t("Tu punto de partida nutricional")}
+            action={<EditButton label={t("Editar")} onPress={() => router.push("/nutricion")} />}
+            title={t("Tu objetivo nutricional")}
             description={t("Estimaciones para empezar. Se corrigen con la tendencia real de tu peso a lo largo de varias semanas.")}
           />
           <StatRow>
@@ -170,7 +190,7 @@ export default function InitialReport() {
       ) : null}
 
       <Card>
-        <CardHeader title={t("Medidas de partida")} />
+        <CardHeader title={t("Medidas de partida")} action={<EditButton label={t("Añadir")} onPress={() => router.push("/cuerpo")} />} />
         {known.length > 0 && firstMeasures ? (
           <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: space.lg }}>
             {known.map((measure) => (
@@ -212,7 +232,98 @@ export default function InitialReport() {
           </Notice>
         ) : null}
       </Card>
+      {editing ? (
+        <EditSheet
+          part={editing}
+          profile={profile}
+          saving={pending}
+          onClose={() => setEditing(null)}
+          onSave={async (draft) => {
+            const result = await run((db) => updateProfileAndReplan(db, profileFromDraft(draft)));
+            if (!result) return null;
+            if (!result.ok) return result.error;
+            setEditing(null);
+            setMessage(
+              result.data.planRegenerated
+                ? { tone: "positive", text: t("Guardado. Tu rutina y tu objetivo de calorías se han vuelto a calcular.") }
+                : { tone: "warning", text: t("Guardado y calorías recalculadas. La rutina no ha cambiado porque tienes una sesión en curso: termínala y genera la rutina de nuevo en Perfil.") },
+            );
+            return null;
+          }}
+        />
+      ) : null}
     </Screen>
+  );
+}
+
+function EditButton({ onPress, label }: { onPress: () => void; label?: string }) {
+  const colors = useColors();
+  return (
+    <Pressable onPress={onPress} hitSlop={8} accessibilityRole="button" style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+      <Pencil size={14} color={colors.accentFg} />
+      <Txt variant="small" style={{ color: colors.accentFg, fontWeight: "600" }}>
+        {label ?? t("Cambiar")}
+      </Txt>
+    </Pressable>
+  );
+}
+
+/** Hoja con las secciones del perfil de esa parte del informe. Devuelve el error al guardar, si lo hay. */
+function EditSheet({
+  part,
+  profile,
+  saving,
+  onClose,
+  onSave,
+}: {
+  part: EditPart;
+  profile: Profile;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (draft: Draft) => Promise<string | null>;
+}) {
+  const colors = useColors();
+  const [draft, setDraft] = useState<Draft>(() => draftFromProfile(profile));
+  const [error, setError] = useState<string | null>(null);
+  const update = (patch: Partial<Draft>) => {
+    setDraft((current) => ({ ...current, ...patch }));
+    setError(null);
+  };
+  const save = async () => {
+    for (const step of PART_STEPS[part]) {
+      const problem = validateStep(step, draft, { requireWeight: false });
+      if (problem) return setError(t(problem));
+    }
+    setError(await onSave(draft));
+  };
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={onClose} accessibilityLabel={t("Cerrar")} />
+      <View style={{ maxHeight: "90%", backgroundColor: colors.bg, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, borderTopWidth: 1, borderColor: colors.line }}>
+        <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.xxl, gap: space.xl }} keyboardShouldPersistTaps="handled">
+          <Txt variant="h2">{part === "you" ? t("Tus datos y tu objetivo") : t("Tu experiencia, tus días y tu material")}</Txt>
+          {part === "you" ? (
+            <>
+              <PersonalSection draft={draft} update={update} showWeight={false} />
+              <GoalsSection draft={draft} update={update} brief />
+            </>
+          ) : (
+            <>
+              <ExperienceSection draft={draft} update={update} brief />
+              <AvailabilitySection draft={draft} update={update} />
+            </>
+          )}
+          <Txt variant="small">{t("Al guardar se vuelven a calcular tu rutina y tus calorías. Tu historial de entrenamientos y comidas se conserva.")}</Txt>
+          {error ? <Notice tone="danger">{error}</Notice> : null}
+          <Button size="lg" full onPress={save} loading={saving}>
+            {t("Guardar y recalcular")}
+          </Button>
+          <Button variant="ghost" full onPress={onClose} disabled={saving}>
+            {t("Cancelar")}
+          </Button>
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 

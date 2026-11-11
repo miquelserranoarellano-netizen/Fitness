@@ -3,6 +3,21 @@
 Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
 en curso (fase 5 de 10 hecha).
 
+## Fusión con la rama de la app del móvil (11/11/2026)
+
+La app del móvil (repositorio `mdjoyanes/fitneesduo`, que sale del commit `30ecd7b` de este) y la del VPS vuelven a
+tener el mismo código: se ha fusionado su rama con la de aquí. Trae el SDK 58, el cuestionario de 6 pasos con
+selectores en lugar de escribir, la nutrición nueva con el botón flotante de cámara, el objetivo editable, el CSV,
+los cuatro idiomas y su revisión de seguridad de fotos y archivos. Al fusionar se han juntado las dos revisiones de
+seguridad (una sola cifra para el tope de notas: 400 caracteres), el importador de copias con el CSV en «Tus datos»
+y el botón flotante con el permiso de la IA (sin permiso, el botón enseña antes el aviso y no abre la cámara).
+- **Comprobado:** `npm run check` (161 pruebas), servidor con 45, `expo export` para Android y web (con el SDK 58
+  la web se divide por pantallas y sigue funcionando con la CSP de Caddy), y en el navegador: Inicio con una base
+  de datos anterior (la migración 3 se aplica sola), Nutrición con el anillo y el botón de cámara, el permiso de la
+  IA antes de abrir la cámara y el selector de edad en Perfil.
+- **Pendiente:** 129 textos nuevos de esta rama (permiso de la IA, servidor, importar copias, avisos de rutina) sin
+  traducir al inglés, francés y alemán: en esos idiomas salen en español (`npm run i18n` los lista).
+
 ## Fallos, aspecto y rendimiento (11/11/2026)
 
 - **Fallos encontrados con 7.500 perfiles al azar** (`src/domain/random.test.ts`): con poco material (solo banco,
@@ -20,6 +35,76 @@ en curso (fase 5 de 10 hecha).
 - **Comprobado:** `npm run check` (139 pruebas), `expo export` para Android y web, servidor con 43 pruebas, y en el
   navegador: cuestionario, sesión con 3 series y terminarla, comida a mano, permiso de la IA, exportar e importar
   una copia, barra inferior en móvil y en ordenador.
+
+## Inglés, francés y alemán (11/11/2026)
+
+Los cuatro idiomas se pueden elegir en Más → Apariencia e idioma (o «Sistema»). Catálogos en `src/i18n/catalogs/`
+con los 1.331 textos de la interfaz, las etiquetas (`labels()` en `domain/types.ts` y demás) y los 66 ejercicios
+con sus consejos. Validaciones del cuestionario traducidas. `npm run i18n` dice si falta alguna traducción.
+- **Siguen en español:** los textos que forma el motor con datos (por qué esta rutina, ajustes de calorías,
+  informes semanales y mensuales) y algunos errores de la capa de datos. Es el resto de la antigua fase 10.
+- **Comprobado:** `npm run check` (146 pruebas) y `npm run i18n` (nada pendiente).
+
+## Nutrición nueva, menús, informe editable y CSV (11/11/2026)
+
+A petición de Miquel tras probarla:
+- **Nutrición rehecha** (`(tabs)/nutricion.tsx`, `src/features/nutrition/`): anillo de puntos con lo que queda
+  (verde al llegar al 90-105 % del objetivo, rojo al pasarse), macros del día, agua por vasos, pasos del
+  podómetro del móvil (`expo-sensors`; en iPhone el total del día, en Android desde que se abre la app; a mano en
+  la web), calendario Día/Semana/Mes/Todo con días verdes y rojos, y «Escanea tu primera comida» hasta la
+  primera comida con foto. Objetivo editable: calorías y reparto de macros en % (los gramos cuadran con las
+  calorías); migración 3 para el motivo «manual».
+- **Botón de la cámara** flotante en Nutrición, justo encima del icono de la pestaña y fijo al desplazar: abre la
+  cámara directamente. La barra de abajo sigue con cinco pestañas (`floating` en `Screen`).
+- **Regla de día cumplido**: entre el 90 % y el 105 % del objetivo de ese día (`dayStatus`, `GOOD_RANGE`).
+- **Menús:** fuera «Historial» (lo cubre Análisis; el detalle de cada sesión sigue) y «Revisiones» del menú
+  (siguen como aviso en Inicio cuando tocan).
+- **Informe inicial editable:** «Cambiar» en datos/objetivo y en experiencia/días/material; al guardar se
+  rehacen rutina y calorías (`updateProfileAndReplan`) y el informe enseña lo vigente.
+- **CSV** (Perfil → Tus datos): resumen diario, comidas, entrenamientos y medidas, con «;» y coma decimal.
+- **Comprobado:** `npm run check` (145 pruebas). **Por probar en el móvil:** podómetro y botón de la cámara.
+
+## Expo SDK 58 (11/11/2026)
+
+Para abrirla con el Expo Go actual del iPhone, que solo admite el SDK 58. React Native 0.88, React 19.3, expo-router
+58 y el resto de módulos con las versiones del SDK (`expo install --fix`); `eslint-config-expo` 58 y `@types/react`
+19.3. `package-lock.json` regenerado.
+- **Cambios en el código:** solo `headerTransparent: false` en la pila (`_layout.tsx`): en iOS 26 la cabecera pasa
+  a ser transparente por defecto y el contenido se metería por debajo. `web.output` ya era `"single"`, así que la
+  web del VPS no cambia. No se usaba ninguna de las API retiradas (`InteractionManager`, `ImageBackground`,
+  importaciones de `react-native/Libraries`, pestañas nativas…).
+- **Node:** el SDK 58 pide Node 22.13+, 24.3+ o 26+ (no la 25).
+- **Comprobado:** `npm run check` (129 pruebas), `expo export` para Android y web y `expo-doctor` (18 de 20: las dos
+  que fallan necesitan conexión con Expo, que no había). `npm audit`: 5 avisos moderados, solo de herramientas de
+  compilación. **Sin probar:** en el iPhone con Expo Go.
+
+## Cuestionario inicial más corto y sin teclado (11/11/2026)
+
+A petición: el cuestionario pasa de 8 a 6 pasos y todo se elige, sin escribir.
+- **Selectores** (`src/components/Picker.tsx`): edad, altura, peso (kilos y decimales en dos columnas) y país
+  (`src/lib/countries.ts`) se eligen en una lista que sale desde abajo. Al cambiar de unidades, la altura y el peso
+  elegidos se convierten (`convertDraftUnits`). También en Perfil.
+- **Fuera del cuestionario** (siguen en Perfil o en Cuerpo): el nombre (ahora opcional; Inicio dice «Hola» sin
+  él), la fecha objetivo, los grupos débiles, el paso de medidas entero, las horas de sueño, el estrés, las comidas
+  al día y los textos de alimentación (otras alergias, alimentos que no comes o favoritos, presupuesto,
+  suplementos). Nada de eso entraba en los cálculos salvo las medidas, que se piden en «Cuerpo».
+- **Pasos al día** por tramos (menos de 5.000, de 5.000 a 8.000…, «No lo sé»), alineados con los umbrales del
+  cálculo de calorías.
+- **Comprobado:** `npm run check` (129 pruebas, 5 nuevas del cuestionario corto y del cambio de unidades) y
+  `expo export` para web y Android. **Por probar en el móvil:** que la lista se abra en el valor elegido y se
+  pueda desplazar bien.
+
+## Segunda revisión de seguridad: datos y archivos (11/11/2026)
+
+Detalle en `../SEGURIDAD.md`. Fotos: las copias temporales de la caché se borran al terminar y con «Borrar todos mis
+datos» (`src/lib/temp-files.ts`); las fotos de comidas se buscan por nombre en la carpeta actual (en iOS la ruta
+cambia al actualizar la app) y solo se borran archivos con nombres de la app; «Borrar todos mis datos» borra primero
+la base de datos. Servidor: los registros ya no guardan la búsqueda ni el código de barras, y notas y nombres llevan
+tope. Docker: Caddy sin capacidades de más.
+- **Comprobado:** `npm run check` (124 pruebas), `expo export` para Android y web, servidor con 39 pruebas (2
+  nuevas). La consulta de «foto en uso» con rutas de iOS antiguas y nuevas, probada aparte con SQLite.
+- **Por probar en el móvil:** hacer y borrar fotos de progreso y de comidas, y «Borrar todos mis datos». En el VPS:
+  que Caddy arranque con las capacidades recortadas.
 
 ## VPS, seguridad y versión web (10/11/2026)
 

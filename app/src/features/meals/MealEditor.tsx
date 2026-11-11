@@ -5,12 +5,13 @@ import { Platform, Pressable, View } from "react-native";
 import { DateStepper, Field, Input, Toggle, UnitInput } from "@/components/form";
 import { Screen } from "@/components/screen";
 import { Button, Card, CardHeader, Divider, Notice, Stat, StatRow, Txt } from "@/components/ui";
-import { deleteMeal, releaseMealPhoto, storeMealPhoto } from "@/data/meal-photos";
+import { deleteMeal, mealPhotoDisplayUri, releaseMealPhoto, storeMealPhoto } from "@/data/meal-photos";
 import { saveMeal } from "@/data/meals";
 import { useMutation } from "@/data/provider";
 import { msg, t } from "@/i18n";
 import type { FoodDataSource } from "@/integrations/nutrition/contract";
 import { today } from "@/lib/dates";
+import { discardTempFile } from "@/lib/temp-files";
 import { formatNumber } from "@/lib/units";
 import { radius, space, useColors } from "@/theme";
 import {
@@ -75,7 +76,7 @@ export function MealEditor({
   const totals = draftTotals(draft);
   const range = draftRange(draft);
   const warnings = draftWarnings(draft);
-  const photoUri = draft.newPhoto?.uri ?? draft.photoUri;
+  const photoUri = draft.newPhoto?.uri ?? mealPhotoDisplayUri(draft.photoUri);
   const extras = [
     totals.fiberG !== null ? t("Fibra {n} g", { n: formatNumber(totals.fiberG, 1) }) : null,
     totals.sugarG !== null ? t("Azúcar {n} g", { n: formatNumber(totals.sugarG, 1) }) : null,
@@ -107,6 +108,8 @@ export function MealEditor({
       });
       if (!result.ok && stored) await releaseMealPhoto(db, stored);
       if (result.ok && result.releasedPhotoUri) await releaseMealPhoto(db, result.releasedPhotoUri);
+      // Guardada la comida, la foto de la cámara o la galería que quedaba en la caché ya no hace falta.
+      if (result.ok) discardTempFile(draft.newPhoto?.uri);
       return result;
     });
     if (!outcome) return;

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getLanguage, isSingular, localeTag, msg, resolveLanguage, setLanguage, t, tn } from "./index";
+import { AVAILABLE_LANGUAGES, getLanguage, isSingular, labels, localeTag, msg, resolveLanguage, setLanguage, t, tn } from "./index";
 
 afterEach(() => setLanguage("es"));
 
@@ -24,13 +24,27 @@ describe("traducciones", () => {
     expect(tn(12000, "{n} paso", "{n} pasos")).toBe(`${(12000).toLocaleString("es-ES")} pasos`);
   });
 
-  it("solo ofrece idiomas con catálogo y, si no hay ninguno del teléfono, español", () => {
+  it("elige el idioma del teléfono si hay catálogo y, si no, español", () => {
     expect(resolveLanguage("system", ["es-ES"])).toBe("es");
     expect(resolveLanguage("system", ["pl-PL"])).toBe("es");
-    // Hasta la fase 10 no hay catálogos: el inglés todavía no se puede elegir.
-    expect(resolveLanguage("en", [])).toBe("es");
+    expect(resolveLanguage("system", ["pl-PL", "de-AT"])).toBe("de");
+    expect(resolveLanguage("en", [])).toBe("en");
+    expect(AVAILABLE_LANGUAGES).toEqual(["es", "en", "fr", "de"]);
+  });
+
+  it("traduce textos, plurales y etiquetas al idioma elegido", () => {
     setLanguage("en");
-    expect(getLanguage()).toBe("es");
+    expect(getLanguage()).toBe("en");
+    expect(t("Objetivo diario")).toBe("Daily target");
+    expect(t("Te quedan {kcal} kcal", { kcal: 500 })).toBe("500 kcal left");
+    expect(tn(3, "{n} semana", "{n} semanas")).toBe("3 weeks");
+    setLanguage("fr");
+    expect(tn(1, "{n} semana", "{n} semanas")).toBe("1 semaine");
+    const table = labels({ fat_loss: "Perder grasa" });
+    expect(table.fat_loss).toBe("Perdre du gras");
+    setLanguage("de");
+    expect(labels(["Lunes", "Martes"] as const).map((day) => day)).toEqual(["Montag", "Dienstag"]);
+    expect(t("Texto que no está en el catálogo")).toBe("Texto que no está en el catálogo");
   });
 
   it("msg no cambia el texto y localeTag da la etiqueta del idioma", () => {

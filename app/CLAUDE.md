@@ -1,9 +1,9 @@
 # Appcombinada · app
 
-App combinada de Smart Fitness Coach (Miquel) y SnapCal (Marc), hecha con Expo (SDK 57, Expo Router, Expo Go). Parte
+App combinada de Smart Fitness Coach (Miquel) y SnapCal (Marc), hecha con Expo (SDK 58, Expo Router, Expo Go). Parte
 de la app de Miquel; la fusión sigue `../fusion/PLAN-FUSION.md` (fases y decisiones) y `../fusion/PROMPT-FUSION-APPS.md`.
 Las apps originales están en `../originales/`: son solo de consulta, no se modifican. Lee también `AGENTS.md` (Expo
-cambia en cada SDK: consulta la documentación de la v57 antes de usar una API) y `docs/ESTADO.md`.
+cambia en cada SDK: consulta la documentación de la v58 antes de usar una API) y `docs/ESTADO.md`.
 
 - **Solo módulos incluidos en Expo Go.** Antes de añadir una dependencia, `npx expo install <paquete>` y comprueba
   que Expo Go la incluye; si no, la app dejaría de abrirse en Expo Go.
@@ -21,12 +21,17 @@ cambia en cada SDK: consulta la documentación de la v57 antes de usar una API) 
 - **Idiomas (ES, EN, FR, DE).** Todo texto visible pasa por `t()` / `tn()` de `src/i18n`: el español es la clave
   (`t("Guardar peso")`, `t("Unas {kcal} kcal", { kcal })`, `tn(n, "{n} serie", "{n} series")`). Fuera de un
   componente se marca con `msg()` y se traduce al mostrarlo. No partas frases en trozos si se puede evitar.
-  Fechas y números con `src/lib/dates.ts` y `formatNumber`, que siguen el idioma activo. Pendiente para la fase 10:
-  los textos que forma el motor (`src/domain/`), la capa de datos y las validaciones, y el catálogo de ejercicios.
+  Fechas y números con `src/lib/dates.ts` y `formatNumber`, que siguen el idioma activo. Las tablas de etiquetas
+  (`GOAL_LABEL`…) van envueltas en `labels()` y se traducen solas; los nombres y consejos de ejercicios, con `t()`
+  al mostrarlos. Los catálogos (`src/i18n/catalogs/en|fr|de.ts`) tienen el español como clave: si añades o
+  cambias un texto, añade su traducción a los tres y comprueba con `npm run i18n`. Siguen solo en español los
+  textos que forma el motor con datos (explicaciones de la rutina, ajustes, informes) y los errores de la capa
+  de datos.
 - **Nutrición.** Se completa con SnapCal en las fases del plan. Las comidas entran por `saveFoodEntries`
   (`src/integrations/nutrition/`, ver `docs/INTEGRACION-NUTRICION.md`); sus totales salen de `mealTotals` y
   `scaleItem` (`src/domain/nutrition/intake.ts`), nunca de la pantalla. Borrar una comida con `deleteMeal`
-  (borra también su foto). El objetivo de kcal y macros sale solo de `src/domain/nutrition/targets.ts`.
+  (borra también su foto). El objetivo de kcal y macros sale de `src/domain/nutrition/targets.ts` o, si la
+  persona lo edita, de `macros.ts` (`setManualTarget`). Día cumplido: entre el 90 % y el 105 % (`GOOD_RANGE`).
 - **Registrar comidas.** Pantallas en `src/app/comida/` (foto, texto, código, favoritas → `nueva`; corregir en
   `[id]`). Pasan un `MealDraft` (`src/features/meals/draft.ts`, funciones puras con pruebas) con `setMealDraft` y
   la revisión (`MealEditor`) guarda con `saveMeal` (`src/data/meals.ts`, en una transacción con la favorita).

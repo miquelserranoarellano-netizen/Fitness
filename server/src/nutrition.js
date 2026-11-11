@@ -89,7 +89,8 @@ async function searchUsda(query) {
     const parsed = (data.foods || []).map(parseUsdaFood).filter(Boolean);
     result = parsed.length ? parsed : null;
   } catch (e) {
-    console.warn("USDA falló:", query, e.message);
+    // Sin la consulta: los registros nunca guardan qué come cada persona.
+    console.warn("USDA falló:", e.message);
     return null; // no cacheamos fallos de red
   }
   cacheSet(key, result);
@@ -143,7 +144,7 @@ async function searchOff(query) {
       .filter(Boolean);
     result = parsed.length ? parsed : null;
   } catch (e) {
-    console.warn("Open Food Facts falló:", query, e.message);
+    console.warn("Open Food Facts falló:", e.message);
     return null;
   }
   cacheSet(key, result);
@@ -211,7 +212,7 @@ export async function lookupBarcode(code) {
       { allowNotFound: true }
     );
   } catch (e) {
-    console.warn("Código de barras falló:", code, e.message);
+    console.warn("Código de barras falló:", e.message);
     throw new LookupUnavailableError("Open Food Facts no responde", { cause: e }); // no cacheamos fallos de red
   }
   const p = data?.product;

@@ -579,3 +579,19 @@ describe("piezas del análisis", () => {
     assert.deepEqual(calorieRange([]), { min: 0, max: 0 });
   });
 });
+
+describe("tope de las notas de la IA", () => {
+  test("unas notas larguísimas se recortan", async () => {
+    const { buildResult, emptyResult, MAX_NOTES_CHARS } = await import("../src/analysis.js");
+    const long = "x".repeat(5000);
+    const parsed = {
+      is_food: true,
+      dish_name: "Plato",
+      notes: long,
+      items: [{ name: "Arroz", search_query_en: "rice", is_packaged: false, grams: 100, calories: 130, protein_g: 3, carbs_g: 28, fat_g: 0, confidence: 0.9, may_contain: [] }],
+    };
+    const result = await buildResult(parsed, "es", [], async () => null);
+    assert.equal(result.notes.length, MAX_NOTES_CHARS);
+    assert.equal(emptyResult(long).notes.length, MAX_NOTES_CHARS);
+  });
+});

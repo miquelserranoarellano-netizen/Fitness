@@ -24,7 +24,7 @@ import {
   type SessionSet,
   type WorkoutSession,
 } from "@/data/sessions";
-import { getExercise, type Exercise } from "@/domain/exercises";
+import { exerciseName, getExercise, type Exercise } from "@/domain/exercises";
 import { suggestNext, type PastPerformance, type Suggestion } from "@/domain/training/progression";
 import { MUSCLE_LABEL, type Units } from "@/domain/types";
 import { msg, t, tn } from "@/i18n";
@@ -127,7 +127,7 @@ function LiveSession({ session, units, guidance }: { session: WorkoutSession; un
   const onSetSaved = (exercise: SessionExercise, isNew: boolean) => {
     if (!isNew) return;
     const at = clock();
-    setRest({ exerciseName: getExercise(exercise.exerciseId)?.name ?? "", startedAt: at, endsAt: at + exercise.restSeconds * 1000 });
+    setRest({ exerciseName: exerciseName(exercise.exerciseId), startedAt: at, endsAt: at + exercise.restSeconds * 1000 });
     // Al completar las series previstas se abre el siguiente ejercicio pendiente.
     if (exercise.sets.length + 1 >= exercise.targetSets) {
       const next = exercises.find((candidate) => candidate.id !== exercise.id && candidate.sets.length < candidate.targetSets);
@@ -310,7 +310,7 @@ function ExerciseCard({ index, exercise, guidance, units, open, usedExerciseIds,
         <StepDot done={complete} label={index + 1} />
         <View style={{ flex: 1 }}>
           <Txt style={{ fontWeight: "500" }} numberOfLines={2}>
-            {meta.name}
+            {t(meta.name)}
           </Txt>
           <Txt variant="tiny" num style={{ marginTop: 2 }}>
             {t("{hechas}/{previstas} series · {reps} reps · RIR {rir}", {
@@ -521,7 +521,7 @@ function ExerciseCard({ index, exercise, guidance, units, open, usedExerciseIds,
                     backgroundColor: pressed ? colors.hover : colors.raised,
                   })}
                 >
-                  <Txt style={{ fontWeight: "500", flex: 1 }}>{alternative.name}</Txt>
+                  <Txt style={{ fontWeight: "500", flex: 1 }}>{t(alternative.name)}</Txt>
                   <ArrowLeftRight size={16} color={colors.subtle} />
                 </Pressable>
               ))}

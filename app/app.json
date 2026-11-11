@@ -62,6 +62,12 @@
         {
           "faceIDPermission": false
         }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "La app lee los pasos de tu móvil para mostrarte los pasos del día. No salen del teléfono."
+        }
       ]
     ],
     "experiments": {

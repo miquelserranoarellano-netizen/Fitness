@@ -17,7 +17,7 @@ export function ExercisePicker({ label, values, onChange, exclude = [] }: { labe
     const needle = normalizeText(query.trim());
     return MUSCLES.map((muscle) => ({
       muscle,
-      items: EXERCISES.filter((exercise) => exercise.primary === muscle && (needle === "" || normalizeText(exercise.name).includes(needle))),
+      items: EXERCISES.filter((exercise) => exercise.primary === muscle && (needle === "" || normalizeText(t(exercise.name)).includes(needle))),
     })).filter((group) => group.items.length > 0);
   }, [query]);
 
@@ -34,10 +34,10 @@ export function ExercisePicker({ label, values, onChange, exclude = [] }: { labe
               <Pressable
                 key={id}
                 onPress={() => toggle(id)}
-                accessibilityLabel={t("Quitar {nombre}", { nombre: exercise.name })}
+                accessibilityLabel={t("Quitar {nombre}", { nombre: t(exercise.name) })}
                 style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.accentSoft, borderRadius: radius.full, paddingLeft: 12, paddingRight: 8, height: 32 }}
               >
-                <Text style={{ color: colors.accentFg, fontSize: 13, fontWeight: "500" }}>{exercise.name}</Text>
+                <Text style={{ color: colors.accentFg, fontSize: 13, fontWeight: "500" }}>{t(exercise.name)}</Text>
                 <X size={14} color={colors.accentFg} />
               </Pressable>
             );
@@ -79,7 +79,7 @@ export function ExercisePicker({ label, values, onChange, exclude = [] }: { labe
                       opacity: disabled ? 0.35 : 1,
                     }}
                   >
-                    <Text style={{ color: selected ? colors.fg : colors.muted, fontSize: 14, flex: 1 }}>{exercise.name}</Text>
+                    <Text style={{ color: selected ? colors.fg : colors.muted, fontSize: 14, flex: 1 }}>{t(exercise.name)}</Text>
                     {selected ? <Check size={16} color={colors.accentFg} strokeWidth={3} /> : null}
                   </Pressable>
                 );

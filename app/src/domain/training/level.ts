@@ -1,14 +1,15 @@
+import { labels } from "@/i18n";
 import type { Experience, Level, Sex } from "../types";
 
 /** Levantamientos de referencia que se pueden indicar en el cuestionario inicial. */
 export const MARK_LIFTS = ["bench", "squat", "deadlift", "overhead_press"] as const;
 export type MarkLift = (typeof MARK_LIFTS)[number];
-export const MARK_LIFT_LABEL: Record<MarkLift, string> = {
+export const MARK_LIFT_LABEL: Record<MarkLift, string> = labels({
   bench: "Press de banca",
   squat: "Sentadilla",
   deadlift: "Peso muerto",
   overhead_press: "Press militar",
-};
+});
 
 export type StrengthMark = { lift: MarkLift; weightKg: number; reps: number };
 

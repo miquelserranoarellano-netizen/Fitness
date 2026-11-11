@@ -72,7 +72,8 @@ export const strengthMarkSchema = z.object({
 
 export const profileSchema = z.object({
   // Datos personales
-  displayName: z.string().trim().min(1, "Dime cómo quieres que te llame.").max(40),
+  // Opcional: el cuestionario inicial no lo pide (se pone en Perfil si se quiere).
+  displayName: z.string().trim().max(40),
   ageYears: z
     .number("Indica tu edad.")
     .int("La edad debe ser un número entero.")

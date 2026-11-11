@@ -1,45 +1,68 @@
-import { useRouter } from "expo-router";
-import { ChevronRight } from "lucide-react-native";
+import { Pencil } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { Loading, Screen } from "@/components/screen";
-import { Badge, Button, Card, CardHeader, Collapsible, EmptyState, Notice, ProgressBar, Row, Stat, StatRow, Txt } from "@/components/ui";
+import { Badge, Button, Card, Collapsible, EmptyState, Notice, Row, Txt } from "@/components/ui";
+import { setSteps, setWater } from "@/data/daily";
 import { getInsights } from "@/data/insights";
-import { listNutritionTargets } from "@/data/nutrition";
+import { getNutritionDay } from "@/data/nutrition-day";
 import { useMutation, useQuery } from "@/data/provider";
-import { applyCalorieDecision, recalculateTarget } from "@/data/services";
+import { applyCalorieDecision, recalculateTarget, setManualTarget } from "@/data/services";
+import { updateSettings } from "@/data/settings";
+import { dayStatus } from "@/domain/nutrition/intake";
+import { calorieFloor } from "@/domain/nutrition/targets";
 import { ALLERGEN_LABEL, DIET_LABEL, GOAL_LABEL } from "@/domain/types";
-import { AddMealButtons, MealThumb } from "@/features/meals/components";
+import { CalorieCalendar } from "@/features/nutrition/CalorieCalendar";
+import { CalorieRing, MacroBars } from "@/features/nutrition/CalorieRing";
+import { CameraFab, FirstMealCard, StepsCard, WaterCard } from "@/features/nutrition/DailyCards";
+import { TargetEditor } from "@/features/nutrition/TargetEditor";
 import { msg, t } from "@/i18n";
-import { getDayIntake } from "@/integrations/nutrition/store";
-import { formatDate, formatTime } from "@/lib/dates";
+import { formatDate } from "@/lib/dates";
+import { usePhoneSteps } from "@/lib/pedometer";
 import { formatNumber, formatSigned } from "@/lib/units";
 import { space, useColors } from "@/theme";
 
-const REASON_LABEL = { initial: msg("Cálculo inicial"), adjustment: msg("Ajuste por tendencia"), profile_change: msg("Recalculado") } as const;
+const REASON_LABEL = {
+  initial: msg("Cálculo inicial"),
+  adjustment: msg("Ajuste por tendencia"),
+  profile_change: msg("Recalculado"),
+  manual: msg("Puesto por ti"),
+} as const;
 
 /**
- * Nutrición: CUÁNTO comer (calorías y macros, y si hay que ajustarlo según la tendencia del peso) y
- * QUÉ se ha comido hoy, con los botones para registrarlo (pantallas de `comida/`). Ver
- * docs/INTEGRACION-NUTRICION.md.
+ * Nutrición: el objetivo del día como un anillo que se llena con lo comido, los macros, el agua, los pasos
+ * del móvil y el calendario de días cumplidos. Para registrar comida, el botón flotante de la cámara (o, sin
+ * cámara, las opciones del día de hoy en el calendario). Ver docs/INTEGRACION-NUTRICION.md.
  */
 export default function Nutrition() {
   const colors = useColors();
-  const router = useRouter();
   const query = useQuery(async (db) => {
     const insights = await getInsights(db);
-    return { insights, history: await listNutritionTargets(db), intake: await getDayIntake(db, insights.today) };
+    return { insights, day: await getNutritionDay(db, insights.today) };
   });
   const { run, pending } = useMutation();
   const [message, setMessage] = useState<{ tone: "danger" | "positive"; text: string } | null>(null);
+  const [editing, setEditing] = useState(false);
+
+  const savedSteps = query.data?.day.steps?.steps ?? 0;
+  const today = query.data?.insights.today;
+  const pedometer = usePhoneSteps({
+    saved: savedSteps,
+    onSteps: (steps) => {
+      if (today) void run((db) => setSteps(db, today, steps, "pedometer"));
+    },
+  });
+
   if (!query.data) return <Loading error={query.error} onRetry={query.reload} />;
 
-  const { insights, history, intake } = query.data;
+  const { insights, day } = query.data;
   const { profile, nutritionTarget: target, calorieDecision: decision } = insights;
+  const { intake, settings } = day;
 
   const recalculate = async () => {
     const result = await run((db) => recalculateTarget(db));
     if (!result) return;
+    setEditing(false);
     setMessage(result.ok ? { tone: "positive", text: t("Objetivo recalculado: unas {kcal} kcal al día.", { kcal: result.data.calories }) } : { tone: "danger", text: result.error });
   };
   const apply = async () => {
@@ -50,7 +73,8 @@ export default function Nutrition() {
 
   if (!target) {
     return (
-      <Screen tab title={t("Nutrición")}>
+      <Screen tab title={t("Nutrición")} floating={<CameraFab />}>
+        {day.hasPhotoMeal ? null : <FirstMealCard />}
         <Card>
           <EmptyState title={t("Aún no hay objetivo nutricional")} action={<Button onPress={recalculate} loading={pending}>{t("Calcular ahora")}</Button>}>
             {t("Se calcula a partir de tu perfil y de tu último peso.")}
@@ -62,168 +86,112 @@ export default function Nutrition() {
   }
 
   const method = target.method;
+  const status = dayStatus({ ...intake, count: intake.entries.length }, target.calories, { date: insights.today, today: insights.today, start: null });
   const canAdjust = decision.action === "increase" || decision.action === "decrease";
 
   return (
-    <Screen
-      tab
-      title={t("Nutrición")}
-      description={t("Objetivo orientado a {objetivo}. Las cifras son estimaciones de partida que se corrigen con la evolución real de tu peso.", {
-        objetivo: GOAL_LABEL[profile.primaryGoal].toLowerCase(),
-      })}
-    >
+    <Screen tab title={t("Nutrición")} floating={<CameraFab />}>
       {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
 
+      {day.hasPhotoMeal ? null : <FirstMealCard />}
+
       <Card>
-        <CardHeader title={t("Objetivo diario")} eyebrow={`${t(REASON_LABEL[target.reason])} · ${formatDate(target.effectiveFrom)}`} />
-        <StatRow>
-          <Stat label={t("Calorías")} value={`≈ ${formatNumber(target.calories, 0)}`} unit="kcal" />
-          <Stat
-            label={t("Proteína")}
-            value={target.proteinG}
-            unit="g"
-            hint={method.weightKg ? t("{gramos} g por kg de peso", { gramos: formatNumber(target.proteinG / method.weightKg, 1) }) : undefined}
-          />
-          <Stat label={t("Carbohidratos")} value={target.carbsG} unit="g" />
-          <Stat label={t("Grasas")} value={target.fatG} unit="g" />
-        </StatRow>
-        <View style={{ marginTop: space.lg, paddingTop: space.sm, borderTopWidth: 1, borderTopColor: colors.line }}>
-          <Collapsible title={t("Cómo se ha calculado")}>
-            <View style={{ gap: space.md }}>
-              <View>
-                <Row label={t("Metabolismo basal (Mifflin-St Jeor)")} value={`${formatNumber(method.bmr, 0)} kcal`} />
-                <Row label={t("Factor de actividad")} value={`× ${formatNumber(method.activityFactor, 2, 2)}`} />
-                <Row
-                  label={t("Gasto diario estimado")}
-                  value={`${formatNumber(method.maintenance, 0)} kcal (${formatNumber(method.maintenanceRange[0], 0)}-${formatNumber(method.maintenanceRange[1], 0)})`}
-                />
-                <Row label={method.adjustment >= 0 ? t("Superávit de partida") : t("Déficit de partida")} value={`${formatSigned(method.adjustment, 0)} kcal`} />
-                <Row label={t("Peso usado en el cálculo")} value={`${formatNumber(method.weightKg, 1)} kg`} />
-                <Row
-                  label={t("Ritmo de peso buscado")}
-                  value={t("{desde} a {hasta} % semanal", { desde: formatSigned(method.targetRatePct[0], 2), hasta: formatSigned(method.targetRatePct[1], 2) })}
-                />
-              </View>
-              {method.decision ? (
-                <Txt variant="small">
-                  {t("Último ajuste ({kcal} kcal): {motivo}", { kcal: formatSigned(method.decision.deltaKcal, 0), motivo: method.decision.reason })}
-                </Txt>
-              ) : null}
-              {method.notes.map((note) => (
-                <Txt key={note} variant="small">
-                  {note}
-                </Txt>
-              ))}
-              <Txt variant="small">
-                {t(
-                  "Las fórmulas de gasto energético tienen un margen de error individual de alrededor del 10 %. Por eso el objetivo se revisa con la tendencia de varias semanas y nunca con una sola pesada. No se puede prometer una cantidad concreta de músculo ganado.",
-                )}
-              </Txt>
-              <Button variant="secondary" size="sm" onPress={recalculate} loading={pending}>
-                {t("Recalcular con mi perfil y peso actuales")}
-              </Button>
-            </View>
-          </Collapsible>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: space.sm }}>
+          <View style={{ flex: 1 }}>
+            <Txt variant="h2">{t("Objetivo diario")}</Txt>
+            <Txt variant="tiny">{`${t(REASON_LABEL[target.reason])} · ${formatDate(target.effectiveFrom)}`}</Txt>
+          </View>
+          <Button variant="secondary" size="sm" icon={Pencil} onPress={() => setEditing(true)}>
+            {t("Editar")}
+          </Button>
+        </View>
+        <CalorieRing consumed={intake.calories} goal={target.calories} status={status} />
+        <View style={{ marginTop: space.lg }}>
+          <MacroBars consumed={intake} target={target} />
         </View>
       </Card>
 
-      <Card>
-        <CardHeader title={t("¿Hay que ajustar las calorías?")} eyebrow={t("Según tu tendencia de peso")} />
-        <Txt style={{ fontWeight: "600" }}>{decision.title}</Txt>
-        <Txt variant="small" style={{ marginTop: 4 }}>
-          {decision.reason}
-        </Txt>
-        {canAdjust ? (
-          <Button onPress={apply} loading={pending} style={{ marginTop: space.md }}>
+      {canAdjust ? (
+        <Notice tone="info" title={decision.title}>
+          <Txt variant="small">{decision.reason}</Txt>
+          <Button size="sm" variant="secondary" onPress={apply} loading={pending} style={{ marginTop: space.sm, alignSelf: "flex-start" }}>
             {t("Aplicar el ajuste ({kcal} kcal)", { kcal: formatSigned(decision.deltaKcal, 0) })}
           </Button>
-        ) : null}
-      </Card>
+        </Notice>
+      ) : null}
 
-      {/* Lo comido hoy y cómo registrarlo. La pantalla completa (tira semanal, agua, pasos) llega en la fase 6. */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.lg }}>
+        <WaterCard
+          ml={day.waterMl}
+          goalMl={settings.waterGoalMl}
+          onChange={(ml) => void run((db) => setWater(db, insights.today, ml))}
+          onGoal={(waterGoalMl) => void run((db) => updateSettings(db, { waterGoalMl }))}
+        />
+        <StepsCard
+          steps={savedSteps}
+          goal={settings.stepGoal}
+          status={pedometer}
+          onManual={(steps) => void run((db) => setSteps(db, insights.today, steps, "manual"))}
+          onGoal={(stepGoal) => void run((db) => updateSettings(db, { stepGoal }))}
+        />
+      </View>
+
+      <CalorieCalendar today={insights.today} />
+
       <Card>
-        <CardHeader title={t("Lo que comes hoy")} eyebrow={formatDate(insights.today)} />
-        <View style={{ gap: space.lg }}>
-          <Meter label={t("Calorías")} value={intake.calories} target={target.calories} unit="kcal" />
-          <Meter label={t("Proteína")} value={intake.proteinG ?? 0} target={target.proteinG} unit="g" />
-          {intake.carbsG !== null ? <Meter label={t("Carbohidratos")} value={intake.carbsG} target={target.carbsG} unit="g" /> : null}
-          {intake.fatG !== null ? <Meter label={t("Grasas")} value={intake.fatG} target={target.fatG} unit="g" /> : null}
-          {intake.entries.length > 0 ? (
+        <Collapsible title={t("Cómo se ha calculado tu objetivo")}>
+          <View style={{ gap: space.md }}>
+            {target.reason === "manual" ? <Txt variant="small">{t("Ahora mismo usas un objetivo puesto por ti. Esta es la estimación de la que partía:")}</Txt> : null}
             <View>
-              {intake.entries.map((entry) => (
-                <Pressable
-                  key={entry.id}
-                  onPress={() => router.push({ pathname: "/comida/[id]", params: { id: entry.id } })}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("Corregir {comida}", { comida: entry.name })}
-                  style={({ pressed }) => ({ flexDirection: "row", alignItems: "center", gap: space.md, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.line, opacity: pressed ? 0.7 : 1 })}
-                >
-                  <MealThumb uri={entry.photoUri} size={36} />
-                  <View style={{ flex: 1 }}>
-                    <Txt variant="small" style={{ color: colors.fg }} numberOfLines={1}>
-                      {entry.name}
-                    </Txt>
-                    <Txt variant="tiny" num>
-                      {formatTime(entry.eatenAt)}
-                    </Txt>
-                  </View>
-                  <Txt variant="small" num>
-                    {formatNumber(entry.calories, 0)} kcal
-                  </Txt>
-                  <ChevronRight size={16} color={colors.subtle} />
-                </Pressable>
-              ))}
+              <Row label={t("Metabolismo basal (Mifflin-St Jeor)")} value={`${formatNumber(method.bmr, 0)} kcal`} />
+              <Row label={t("Factor de actividad")} value={`× ${formatNumber(method.activityFactor, 2, 2)}`} />
+              <Row
+                label={t("Gasto diario estimado")}
+                value={`${formatNumber(method.maintenance, 0)} kcal (${formatNumber(method.maintenanceRange[0], 0)}-${formatNumber(method.maintenanceRange[1], 0)})`}
+              />
+              <Row label={method.adjustment >= 0 ? t("Superávit de partida") : t("Déficit de partida")} value={`${formatSigned(method.adjustment, 0)} kcal`} />
+              <Row label={t("Peso usado en el cálculo")} value={`${formatNumber(method.weightKg, 1)} kg`} />
             </View>
-          ) : (
-            <Txt variant="small">{t("Aún no has registrado nada hoy. Haz una foto del plato, escríbelo o escanea el código de barras.")}</Txt>
-          )}
-          <AddMealButtons />
+            <Txt variant="small">
+              {t("Objetivo orientado a {objetivo}. Las fórmulas tienen un margen de error de alrededor del 10 %: por eso el objetivo se revisa con la tendencia de tu peso de varias semanas, nunca con una sola pesada.", {
+                objetivo: GOAL_LABEL[profile.primaryGoal].toLowerCase(),
+              })}
+            </Txt>
+            <Button variant="secondary" size="sm" onPress={recalculate} loading={pending}>
+              {t("Recalcular con mi perfil y peso actuales")}
+            </Button>
+          </View>
+        </Collapsible>
+        <View style={{ marginTop: space.md, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.line, gap: space.sm }}>
+          <Txt variant="small">{t("Al analizar una comida, la IA avisa si podría contener algo de lo que evitas (Perfil → Alimentación).")}</Txt>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            <Badge>{DIET_LABEL[profile.dietPreference]}</Badge>
+            {profile.allergies.map((allergen) => (
+              <Badge key={allergen} tone="warning">
+                {t("Sin {alergeno}", { alergeno: ALLERGEN_LABEL[allergen].toLowerCase() })}
+              </Badge>
+            ))}
+          </View>
         </View>
       </Card>
 
-      <Card>
-        <CardHeader title={t("Tus preferencias")} description={t("Al analizar una comida, la IA avisa si podría contener algo de lo que evitas. Puedes cambiarlas en Perfil → Alimentación.")} />
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-          <Badge>{DIET_LABEL[profile.dietPreference]}</Badge>
-          <Badge>{t("{n} comidas al día", { n: profile.mealsPerDay })}</Badge>
-          {profile.allergies.map((allergen) => (
-            <Badge key={allergen} tone="warning">
-              {t("Sin {alergeno}", { alergeno: ALLERGEN_LABEL[allergen].toLowerCase() })}
-            </Badge>
-          ))}
-        </View>
-      </Card>
-
-      {history.length > 1 ? (
-        <Card>
-          <CardHeader title={t("Historial de objetivos")} />
-          {history.map((item) => (
-            <View key={item.id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line, gap: 2 }}>
-              <Txt variant="tiny">
-                {formatDate(item.effectiveFrom)} · {t(REASON_LABEL[item.reason])}
-              </Txt>
-              <Txt variant="small" num style={{ color: colors.fg }}>
-                {t("{kcal} kcal · {p} g P · {h} g H · {g} g G", { kcal: item.calories, p: item.proteinG, h: item.carbsG, g: item.fatG })}
-              </Txt>
-            </View>
-          ))}
-        </Card>
+      {editing ? (
+        <TargetEditor
+          visible
+          target={{ ...target, manual: method.manual }}
+          floor={calorieFloor(profile.sex)}
+          saving={pending}
+          onClose={() => setEditing(false)}
+          onAutomatic={recalculate}
+          onSave={async (calories, split) => {
+            const result = await run((db) => setManualTarget(db, { calories, split }));
+            if (!result) return;
+            if (!result.ok) return setMessage({ tone: "danger", text: result.error });
+            setEditing(false);
+            setMessage({ tone: "positive", text: t("Objetivo guardado: {kcal} kcal al día.", { kcal: formatNumber(calories, 0) }) });
+          }}
+        />
       ) : null}
     </Screen>
-  );
-}
-
-function Meter({ label, value, target, unit }: { label: string; value: number; target: number; unit: string }) {
-  const colors = useColors();
-  return (
-    <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        <Txt variant="small">{label}</Txt>
-        <Txt variant="small" num style={{ color: colors.fg }}>
-          {formatNumber(value, 0)} / {formatNumber(target, 0)} {unit}
-        </Txt>
-      </View>
-      <ProgressBar value={target > 0 ? value / target : 0} tone="info" />
-    </View>
   );
 }

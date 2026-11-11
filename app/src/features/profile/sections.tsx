@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { ExercisePicker } from "@/components/ExercisePicker";
 import { Chips, Field, Input, OptionCards, optionsOf, Segmented, Toggle, UnitInput } from "@/components/form";
+import { PickerField, rangeOptions } from "@/components/Picker";
 import { Button, Notice, Txt } from "@/components/ui";
 import { MARK_LIFTS, MARK_LIFT_LABEL } from "@/domain/training/level";
 import {
@@ -43,9 +44,10 @@ import {
   type LimitationKind,
   type Severity,
 } from "@/domain/types";
-import type { Draft } from "@/features/onboarding/draft";
+import { convertDraftUnits, type Draft } from "@/features/onboarding/draft";
 import { msg, t } from "@/i18n";
-import { lengthUnit, weightUnit } from "@/lib/units";
+import { COUNTRIES } from "@/lib/countries";
+import { lengthUnit, parseDecimal, weightUnit } from "@/lib/units";
 import { radius, space, useColors } from "@/theme";
 import { MeasureGuide } from "./MeasureGuide";
 
@@ -73,38 +75,46 @@ const Gap = ({ children }: { children: ReactNode }) => <View style={{ gap: space
 /** «p. ej. 25» */
 const example = (value: string) => t("p. ej. {ejemplo}", { ejemplo: value });
 
-export function PersonalSection({ draft, update, showWeight = true }: SectionProps & { showWeight?: boolean }) {
+/** Rango de los selectores, en las unidades de la persona (los mismos límites que valida `validateStep`). */
+const PICK = {
+  age: { from: 16, to: 100, initial: 25 },
+  height: { metric: { from: 120, to: 230, initial: 170 }, imperial: { from: 48, to: 90, initial: 67 } },
+  weight: { metric: { from: 30, to: 300, initial: 70 }, imperial: { from: 66, to: 660, initial: 155 } },
+} as const;
+
+const DECIMALS = rangeOptions(0, 9, (digit) => `,${digit}`);
+
+/** «68,5» → [68, 5]; vacío o no válido → [null, null]. */
+function splitWeight(text: string): [number | null, number | null] {
+  const value = parseDecimal(text);
+  if (value === null || value <= 0) return [null, null];
+  const whole = Math.floor(value);
+  return [whole, Math.min(9, Math.round((value - whole) * 10))];
+}
+
+const joinWeight = (whole: number, decimal: number) => (decimal > 0 ? `${whole},${decimal}` : String(whole));
+
+/**
+ * Datos personales. Todo se elige, sin teclado, salvo el nombre. `brief`: versión del cuestionario
+ * inicial, sin el nombre (se pone después en Perfil si se quiere).
+ */
+export function PersonalSection({ draft, update, showWeight = true, brief = false }: SectionProps & { showWeight?: boolean; brief?: boolean }) {
+  const lengthU = lengthUnit(draft.units);
+  const weightU = weightUnit(draft.units);
+  const heightRange = PICK.height[draft.units];
+  const weightRange = PICK.weight[draft.units];
+  const age = parseDecimal(draft.age);
+  const height = parseDecimal(draft.height);
+  const [weightWhole, weightDecimal] = splitWeight(draft.weight);
+  const countryKnown = COUNTRIES.includes(draft.country);
+
   return (
     <Gap>
-      <Field label={t("¿Cómo quieres que te llame?")}>
-        <Input value={draft.displayName} onChangeText={(displayName) => update({ displayName })} maxLength={40} autoCapitalize="words" />
-      </Field>
-      <View style={{ flexDirection: "row", gap: space.md }}>
-        <Field label={t("Edad")} style={{ flex: 1 }}>
-          <UnitInput unit={t("años")} integer value={draft.age} onChangeText={(age) => update({ age })} placeholder={example("25")} />
+      {brief ? null : (
+        <Field label={t("¿Cómo quieres que te llame?")} optional>
+          <Input value={draft.displayName} onChangeText={(displayName) => update({ displayName })} maxLength={40} autoCapitalize="words" />
         </Field>
-        <Field label={t("Altura")} style={{ flex: 1 }}>
-          <UnitInput
-            unit={lengthUnit(draft.units)}
-            value={draft.height}
-            onChangeText={(height) => update({ height })}
-            placeholder={draft.units === "metric" ? example("180") : example("71")}
-          />
-        </Field>
-      </View>
-      {showWeight ? (
-        <Field label={t("Peso actual")} hint={t("Si puedes, pésate por la mañana, después de ir al baño y antes de comer. Será tu punto de partida.")}>
-          <UnitInput
-            unit={weightUnit(draft.units)}
-            value={draft.weight}
-            onChangeText={(weight) => update({ weight })}
-            placeholder={draft.units === "metric" ? example("68") : example("150")}
-          />
-        </Field>
-      ) : null}
-      <Field label={t("Sexo")} hint={t("Solo se usa para estimar tu gasto energético. Si prefieres no indicarlo, la estimación tendrá más margen de error.")}>
-        <Segmented options={optionsOf(SEXES, SEX_LABEL)} value={draft.sex} onChange={(sex) => update({ sex })} />
-      </Field>
+      )}
       <Field label={t("Unidades")}>
         <Segmented
           options={[
@@ -112,17 +122,86 @@ export function PersonalSection({ draft, update, showWeight = true }: SectionPro
             { value: "imperial" as const, label: t("Imperial (lb, in)") },
           ]}
           value={draft.units}
-          onChange={(units) => update({ units })}
+          onChange={(units) => update(convertDraftUnits(draft, units))}
         />
       </Field>
+      <Field label={t("Sexo")} hint={t("Solo se usa para estimar tu gasto energético. Si prefieres no indicarlo, la estimación tendrá más margen de error.")}>
+        <Segmented options={optionsOf(SEXES, SEX_LABEL)} value={draft.sex} onChange={(sex) => update({ sex })} />
+      </Field>
+      <View style={{ flexDirection: "row", gap: space.md }}>
+        <Field label={t("Edad")} style={{ flex: 1 }}>
+          <PickerField
+            title={t("Edad")}
+            display={draft.age ? t("{n} años", { n: draft.age }) : null}
+            columns={[
+              {
+                options: rangeOptions(PICK.age.from, PICK.age.to, (n) => t("{n} años", { n })),
+                value: age !== null && Number.isInteger(age) ? age : null,
+                initial: PICK.age.initial,
+                onChange: (value) => update({ age: String(value) }),
+              },
+            ]}
+          />
+        </Field>
+        <Field label={t("Altura")} style={{ flex: 1 }}>
+          <PickerField
+            title={t("Altura")}
+            display={draft.height ? `${draft.height} ${lengthU}` : null}
+            columns={[
+              {
+                options: rangeOptions(heightRange.from, heightRange.to, (n) => `${n} ${lengthU}`),
+                value: height !== null && Number.isInteger(height) ? height : null,
+                initial: heightRange.initial,
+                onChange: (value) => update({ height: String(value) }),
+              },
+            ]}
+          />
+        </Field>
+      </View>
+      {showWeight ? (
+        <Field label={t("Peso actual")} hint={t("Si puedes, pésate por la mañana, después de ir al baño y antes de comer. Será tu punto de partida.")}>
+          <PickerField
+            title={t("Peso actual")}
+            display={draft.weight ? `${draft.weight} ${weightU}` : null}
+            columns={[
+              {
+                options: rangeOptions(weightRange.from, weightRange.to, (n) => `${n} ${weightU}`),
+                value: weightWhole,
+                initial: weightRange.initial,
+                flex: 2,
+                accessibilityLabel: t("Peso: parte entera"),
+                onChange: (whole) => update({ weight: joinWeight(whole, weightDecimal ?? 0) }),
+              },
+              {
+                options: DECIMALS,
+                value: weightWhole === null ? null : (weightDecimal ?? 0),
+                initial: 0,
+                accessibilityLabel: t("Peso: decimales"),
+                onChange: (decimal) => update({ weight: joinWeight(weightWhole ?? weightRange.initial, decimal) }),
+              },
+            ]}
+          />
+        </Field>
+      ) : null}
       <Field label={t("País")} optional hint={t("Ayuda a la futura parte de alimentación a proponer comidas habituales donde vives.")}>
-        <Input value={draft.country} onChangeText={(country) => update({ country })} maxLength={60} autoCapitalize="words" />
+        <PickerField
+          title={t("País")}
+          display={draft.country ? (countryKnown ? t(draft.country) : draft.country) : null}
+          columns={[
+            {
+              options: COUNTRIES.map((country) => ({ value: country, label: t(country) })),
+              value: countryKnown ? draft.country : null,
+              onChange: (country) => update({ country }),
+            },
+          ]}
+        />
       </Field>
     </Gap>
   );
 }
 
-export function GoalsSection({ draft, update }: SectionProps) {
+/** `brief`: versión del cuestionario inicial, sin la fecha objetivo (se añade en Perfil). */
+export function GoalsSection({ draft, update, brief = false }: SectionProps & { brief?: boolean }) {
   return (
     <Gap>
       <Field label={t("Objetivo principal")}>
@@ -142,20 +221,22 @@ export function GoalsSection({ draft, update }: SectionProps) {
       >
         <Chips options={optionsOf(MUSCLES, MUSCLE_LABEL)} values={draft.priorityMuscles} onChange={(priorityMuscles) => update({ priorityMuscles })} />
       </Field>
-      <Field label={t("Fecha objetivo")} optional hint={t("Si tienes una fecha en mente (un viaje, un evento…). Formato AAAA-MM-DD.")}>
-        <Input
-          value={draft.targetDate}
-          onChangeText={(targetDate) => update({ targetDate })}
-          placeholder={example("2027-06-01")}
-          keyboardType="numbers-and-punctuation"
-          autoCapitalize="none"
-        />
-      </Field>
+      {brief ? null : (
+        <Field label={t("Fecha objetivo")} optional hint={t("Si tienes una fecha en mente (un viaje, un evento…). Formato AAAA-MM-DD.")}>
+          <Input
+            value={draft.targetDate}
+            onChangeText={(targetDate) => update({ targetDate })}
+            placeholder={example("2027-06-01")}
+            keyboardType="numbers-and-punctuation"
+            autoCapitalize="none"
+          />
+        </Field>
+      )}
     </Gap>
   );
 }
 
-/** `brief`: versión del cuestionario inicial, sin marcas ni rutinas anteriores (se completan en Perfil). */
+/** `brief`: versión del cuestionario inicial, sin marcas, grupos débiles ni rutinas anteriores (se completan en Perfil). */
 export function ExperienceSection({ draft, update, brief = false }: SectionProps & { brief?: boolean }) {
   const unit = weightUnit(draft.units);
   return (
@@ -203,13 +284,15 @@ export function ExperienceSection({ draft, update, brief = false }: SectionProps
           </View>
         </Field>
       )}
-      <Field
-        label={t("¿Qué grupos musculares notas más débiles o atrasados?")}
-        optional
-        hint={t("Es tu percepción; la contrastaré con tus registros antes de sacar conclusiones.")}
-      >
-        <Chips options={optionsOf(MUSCLES, MUSCLE_LABEL)} values={draft.weakMuscles} onChange={(weakMuscles) => update({ weakMuscles })} />
-      </Field>
+      {brief ? null : (
+        <Field
+          label={t("¿Qué grupos musculares notas más débiles o atrasados?")}
+          optional
+          hint={t("Es tu percepción; la contrastaré con tus registros antes de sacar conclusiones.")}
+        >
+          <Chips options={optionsOf(MUSCLES, MUSCLE_LABEL)} values={draft.weakMuscles} onChange={(weakMuscles) => update({ weakMuscles })} />
+        </Field>
+      )}
       {brief ? null : (
         <Field label={t("Rutinas anteriores")} optional hint={t("Qué has hecho hasta ahora y qué tal te fue.")}>
           <Input value={draft.previousRoutines} onChangeText={(previousRoutines) => update({ previousRoutines })} maxLength={1000} multiline />
@@ -369,7 +452,51 @@ export function MeasuresSection({ draft, update }: SectionProps) {
   );
 }
 
-export function HabitsSection({ draft, update }: SectionProps) {
+/**
+ * Pasos al día por tramos, para elegir sin escribir. Cada tramo guarda un valor dentro de él, en el lado
+ * de los umbrales que usa el cálculo de calorías (5.000, 8.000 y 12.000 pasos).
+ */
+const STEP_RANGES: { value: string; label: string; steps: number | null }[] = [
+  { value: "lt5", label: msg("Menos de 5.000"), steps: 3000 },
+  { value: "5to8", label: msg("De 5.000 a 8.000"), steps: 6500 },
+  { value: "8to12", label: msg("De 8.000 a 12.000"), steps: 10000 },
+  { value: "gt12", label: msg("Más de 12.000"), steps: 13000 },
+  { value: "unknown", label: msg("No lo sé"), steps: null },
+];
+
+function stepRange(text: string): string | null {
+  const steps = parseDecimal(text);
+  if (steps === null) return null;
+  if (steps < 5000) return "lt5";
+  if (steps < 8000) return "5to8";
+  if (steps < 12000) return "8to12";
+  return "gt12";
+}
+
+/** `brief`: versión del cuestionario inicial, con el trabajo y los pasos (lo que usa el cálculo de calorías). */
+export function HabitsSection({ draft, update, brief = false }: SectionProps & { brief?: boolean }) {
+  const [unknownSteps, setUnknownSteps] = useState(false);
+  if (brief) {
+    return (
+      <Gap>
+        <Field label={t("¿Cómo es tu trabajo o tu día a día?")}>
+          <OptionCards options={optionsOf(JOB_ACTIVITY, JOB_ACTIVITY_LABEL)} value={draft.jobActivity} onChange={(jobActivity) => update({ jobActivity })} />
+        </Field>
+        <Field label={t("¿Cuántos pasos das al día?")} optional hint={t("Más o menos. Si llevas el móvil encima, la app Salud o Google Fit te lo dicen.")}>
+          <Segmented
+            columns={2}
+            options={STEP_RANGES.map((range) => ({ value: range.value, label: t(range.label) }))}
+            value={stepRange(draft.dailySteps) ?? (unknownSteps ? "unknown" : null)}
+            onChange={(value) => {
+              const range = STEP_RANGES.find((candidate) => candidate.value === value);
+              setUnknownSteps(value === "unknown");
+              update({ dailySteps: range?.steps == null ? "" : String(range.steps) });
+            }}
+          />
+        </Field>
+      </Gap>
+    );
+  }
   return (
     <Gap>
       <View style={{ flexDirection: "row", gap: space.md }}>
@@ -394,7 +521,23 @@ export function HabitsSection({ draft, update }: SectionProps) {
  * Preferencias de alimentación. Se guardan aunque la parte de comidas esté pendiente de combinarse
  * con la app de fotos: las necesitará para respetar alergias y gustos.
  */
-export function NutritionSection({ draft, update }: SectionProps) {
+export function NutritionSection({ draft, update, brief = false }: SectionProps & { brief?: boolean }) {
+  if (brief) {
+    // Cuestionario inicial: lo que usan los objetivos y los avisos al analizar comidas. El resto, en Perfil.
+    return (
+      <Gap>
+        <Field label={t("¿Te resulta fácil comer suficiente?")}>
+          <OptionCards options={optionsOf(APPETITE, APPETITE_LABEL)} value={draft.appetite} onChange={(appetite) => update({ appetite })} />
+        </Field>
+        <Field label={t("Tipo de alimentación")}>
+          <OptionCards options={optionsOf(DIETS, DIET_LABEL)} value={draft.dietPreference} onChange={(dietPreference) => update({ dietPreference })} />
+        </Field>
+        <Field label={t("Alergias e intolerancias")} optional hint={t("Al analizar una comida, la IA te avisará si podría contener alguno.")}>
+          <Chips options={optionsOf(ALLERGENS, ALLERGEN_LABEL)} values={draft.allergies} onChange={(allergies) => update({ allergies })} />
+        </Field>
+      </Gap>
+    );
+  }
   return (
     <Gap>
       <Field label={t("¿Cuántas comidas haces al día?")} hint={t("Contando meriendas o tentempiés.")}>

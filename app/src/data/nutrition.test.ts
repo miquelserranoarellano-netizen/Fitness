@@ -7,9 +7,10 @@ import { addDays, today } from "@/lib/dates";
 import { addWater, getSteps, getWater, listSteps, setSteps, setWater } from "./daily";
 import { exportAllData } from "./export";
 import { addFavorite, findFavorite, listFavorites, markFavoriteUsed, removeFavorite } from "./favorites";
-import { getCurrentTarget } from "./nutrition";
+import { getCurrentTarget, listNutritionTargets } from "./nutrition";
 import { getProfile, setState } from "./profile";
-import { completeOnboarding, deleteAllData, recalculateTarget, updateNutritionPreferences } from "./services";
+import { getCalorieCalendar, getNutritionDay } from "./nutrition-day";
+import { completeOnboarding, deleteAllData, recalculateTarget, setManualTarget, updateNutritionPreferences } from "./services";
 import { DEFAULT_SETTINGS, getSettings, updateSettings } from "./settings";
 import { onboardingInput } from "./testing";
 
@@ -53,7 +54,7 @@ describe("migración 2", () => {
     expect((await old.all<{ version: number }>("select version from schema_migrations")).map((row) => row.version)).toEqual([1]);
 
     await migrate(old);
-    expect((await old.all<{ version: number }>("select version from schema_migrations order by version")).map((row) => row.version)).toEqual([1, 2]);
+    expect((await old.all<{ version: number }>("select version from schema_migrations order by version")).map((row) => row.version)).toEqual([1, 2, 3]);
     const columns = (await old.all<{ name: string }>("pragma table_info(food_entries)")).map((row) => row.name);
     expect(columns).toEqual(expect.arrayContaining(["fiber_g", "sugar_g", "sodium_mg", "calories_min", "calories_max", "notes", "updated_at"]));
     const kept = await getFoodEntry(old, "c1");
@@ -62,7 +63,7 @@ describe("migración 2", () => {
 
     // Volver a migrar no hace nada.
     await migrate(old);
-    expect(await count(old, "schema_migrations")).toBe(2);
+    expect(await count(old, "schema_migrations")).toBe(3);
   });
 });
 
@@ -249,5 +250,69 @@ describe("exportar y borrar", () => {
 
     await deleteAllData(db);
     for (const table of ["food_entries", "food_entry_items", "favorite_meals", "water_logs", "step_logs", "profiles"]) expect(await count(db, table)).toBe(0);
+  });
+});
+
+describe("migración 3: objetivo puesto a mano", () => {
+  it("conserva los objetivos que había y acepta el motivo «manual»", async () => {
+    const old = await openTestDb(":memory:", 2);
+    expect((await completeOnboarding(old, onboardingInput())).ok).toBe(true);
+    const before = await listNutritionTargets(old);
+    await migrate(old);
+    expect(await listNutritionTargets(old)).toEqual(before);
+    expect((await setManualTarget(old, { calories: 2500, split: { protein: 30, carbs: 45, fat: 25 } })).ok).toBe(true);
+  });
+});
+
+describe("objetivo puesto a mano", () => {
+  beforeEach(async () => {
+    expect((await completeOnboarding(db, onboardingInput())).ok).toBe(true);
+  });
+
+  it("guarda calorías y gramos que cuadran, y pasa a ser el objetivo actual", async () => {
+    const result = await setManualTarget(db, { calories: 2400, split: { protein: 30, carbs: 40, fat: 30 } });
+    expect(result).toEqual({ ok: true, data: { calories: 2400 } });
+    const target = (await getCurrentTarget(db))!;
+    expect(target).toMatchObject({ reason: "manual", calories: 2400, proteinG: 180, carbsG: 240, fatG: 80 });
+    expect(target.method.manual).toEqual({ protein: 30, carbs: 40, fat: 30 });
+    // Recalcular con el perfil vuelve a la estimación.
+    expect((await recalculateTarget(db)).ok).toBe(true);
+    expect((await getCurrentTarget(db))!.reason).toBe("profile_change");
+  });
+
+  it("no acepta un objetivo por debajo del mínimo ni un reparto que no sume 100", async () => {
+    expect((await setManualTarget(db, { calories: 900, split: { protein: 30, carbs: 40, fat: 30 } })).ok).toBe(false);
+    expect((await setManualTarget(db, { calories: 2400, split: { protein: 30, carbs: 40, fat: 20 } })).ok).toBe(false);
+    expect((await getCurrentTarget(db))!.reason).toBe("initial");
+  });
+});
+
+describe("pantalla de nutrición y calendario", () => {
+  beforeEach(async () => {
+    expect((await completeOnboarding(db, onboardingInput())).ok).toBe(true);
+  });
+
+  it("sabe si ya se ha registrado alguna comida con la cámara", async () => {
+    expect((await getNutritionDay(db, today())).hasPhotoMeal).toBe(false);
+    await saveFoodEntries(db, "texto", [meal({ photoUri: null })]);
+    expect((await getNutritionDay(db, today())).hasPhotoMeal).toBe(false);
+    await saveFoodEntries(db, "foto", [meal()]);
+    const day = await getNutritionDay(db, today());
+    expect(day.hasPhotoMeal).toBe(true);
+    expect(day.intake.entries).toHaveLength(2);
+    expect(day.waterMl).toBe(0);
+  });
+
+  it("marca en verde los días entre el 90 % y el 105 % y en rojo el resto", async () => {
+    const goal = (await getCurrentTarget(db))!.calories;
+    const day = (offset: number) => addDays(today(), offset);
+    await saveFoodEntries(db, "foto", [
+      meal({ date: day(-3), eatenAt: `${day(-3)}T13:00:00Z`, calories: Math.round(goal * 0.95) }),
+      meal({ date: day(-2), eatenAt: `${day(-2)}T13:00:00Z`, calories: Math.round(goal * 1.3) }),
+    ]);
+    const { days, summary } = await getCalorieCalendar(db, day(-4), today(), today());
+    expect(days.map((entry) => entry.status)).toEqual(["none", "good", "bad", "bad", "none"]);
+    expect(summary).toMatchObject({ good: 1, bad: 2, logged: 2 });
+    expect(days.every((entry) => entry.goal === goal)).toBe(true);
   });
 });

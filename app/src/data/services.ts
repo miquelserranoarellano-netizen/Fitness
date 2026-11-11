@@ -1,5 +1,6 @@
 import type { Db } from "@/db/types";
 import { USER_TABLES } from "@/db/migrations";
+import { checkManualTarget, gramsFromSplit, type MacroSplit } from "@/domain/nutrition/macros";
 import { calorieFloor } from "@/domain/nutrition/targets";
 import { buildMonthlyReport } from "@/domain/review/monthly";
 import { buildWeeklyReport, type CheckinAnswers } from "@/domain/review/weekly";
@@ -20,7 +21,7 @@ import { formatLength, formatWeight } from "@/lib/units";
 import { createBlockFromProfile, getActiveBlock, saveBlockEvaluation, UnusablePlanError, type BlockEvaluation } from "./blocks";
 import { hasAnyMeasurement, listWeights, upsertMeasurements, upsertWeight } from "./body";
 import { getInsights } from "./insights";
-import { createTargetFromProfile, insertNutritionTarget } from "./nutrition";
+import { createTargetFromProfile, getCurrentTarget, insertNutritionTarget } from "./nutrition";
 import {
   getLimitations,
   insertLimitation,
@@ -311,6 +312,37 @@ export async function recalculateTarget(db: Db): Promise<Result<{ calories: numb
   if (!last) return fail("Registra tu peso antes de recalcular.");
   const estimate = await createTargetFromProfile(db, profile, last.kg, "profile_change", todayDate());
   return ok({ calories: estimate.calories });
+}
+
+/**
+ * Objetivo de calorías y macros puesto a mano (desde Nutrición). Los gramos salen del reparto, así que
+ * cuadran con las calorías. Queda vigente desde hoy hasta que se recalcule o se ajuste por tendencia.
+ */
+export async function setManualTarget(db: Db, input: { calories: number; split: MacroSplit }): Promise<Result<{ calories: number }>> {
+  const profile = await requireProfile(db);
+  const problem = checkManualTarget(input.calories, input.split, calorieFloor(profile.sex));
+  if (problem) return fail(problem);
+  const current = await getCurrentTarget(db);
+  if (!current) return fail("Todavía no hay un objetivo del que partir.");
+  await insertNutritionTarget(
+    db,
+    { calories: input.calories, ...gramsFromSplit(input.calories, input.split), reason: "manual", method: { ...current.method, manual: input.split } },
+    todayDate(),
+  );
+  return ok({ calories: input.calories });
+}
+
+/**
+ * Cambiar datos desde el informe inicial: guarda el perfil y, con él, vuelve a calcular la rutina y el
+ * objetivo de calorías y macros. Si hay una sesión de entrenamiento abierta, la rutina no se toca (se avisa)
+ * pero el perfil y las calorías sí se actualizan.
+ */
+export async function updateProfileAndReplan(db: Db, data: unknown): Promise<Result<{ planRegenerated: boolean; calories: number | null }>> {
+  const saved = await updateProfile(db, data);
+  if (!saved.ok) return saved;
+  const plan = await regeneratePlan(db);
+  const target = await recalculateTarget(db);
+  return ok({ planRegenerated: plan.ok, calories: target.ok ? target.data.calories : null });
 }
 
 /* ───────────────────────────── Revisiones ───────────────────────────── */

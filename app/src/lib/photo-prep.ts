@@ -1,5 +1,6 @@
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { ApiError, type PhotoPayload } from "./api";
+import { discardTempFile } from "./temp-files";
 
 /**
  * Prepara una foto de comida para analizarla: lado mayor de 1024 px y JPEG al 70 %, en base64. Ahorra
@@ -21,6 +22,8 @@ export async function preparePhotoForAnalysis(uri: string, size: { width: number
     }
     const rendered = await context.renderAsync();
     const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: QUALITY, base64: true });
+    // Solo hace falta el base64: la copia que deja en la caché sobra.
+    discardTempFile(saved.uri);
     if (!saved.base64) throw new Error("La imagen no trae base64.");
     return { base64: saved.base64, mediaType: "image/jpeg" };
   } catch (error) {

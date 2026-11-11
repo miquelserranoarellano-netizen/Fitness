@@ -63,7 +63,7 @@ services:
       # Certificados de HTTPS: se conservan entre reinicios.
       - caddy_data:/data
       - caddy_config:/config
-    # Solo el permiso de abrir los puertos 80 y 443; ninguno más.
+    # Solo el permiso de abrir los puertos 80 y 443: si alguien entrara en Caddy, no podría hacer nada más.
     cap_drop:
       - ALL
     cap_add:
