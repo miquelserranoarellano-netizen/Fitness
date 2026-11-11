@@ -14,7 +14,7 @@ import { calorieFloor } from "@/domain/nutrition/targets";
 import { ALLERGEN_LABEL, DIET_LABEL, GOAL_LABEL } from "@/domain/types";
 import { CalorieCalendar } from "@/features/nutrition/CalorieCalendar";
 import { CalorieRing, MacroBars } from "@/features/nutrition/CalorieRing";
-import { FirstMealCard, StepsCard, WaterCard } from "@/features/nutrition/DailyCards";
+import { CameraFab, FirstMealCard, StepsCard, WaterCard } from "@/features/nutrition/DailyCards";
 import { TargetEditor } from "@/features/nutrition/TargetEditor";
 import { msg, t } from "@/i18n";
 import { formatDate } from "@/lib/dates";
@@ -31,8 +31,8 @@ const REASON_LABEL = {
 
 /**
  * Nutrición: el objetivo del día como un anillo que se llena con lo comido, los macros, el agua, los pasos
- * del móvil y el calendario de días cumplidos. Para registrar comida, el botón de la cámara de la barra de
- * abajo (o, sin cámara, las opciones del día de hoy en el calendario). Ver docs/INTEGRACION-NUTRICION.md.
+ * del móvil y el calendario de días cumplidos. Para registrar comida, el botón flotante de la cámara (o, sin
+ * cámara, las opciones del día de hoy en el calendario). Ver docs/INTEGRACION-NUTRICION.md.
  */
 export default function Nutrition() {
   const colors = useColors();
@@ -73,7 +73,7 @@ export default function Nutrition() {
 
   if (!target) {
     return (
-      <Screen tab title={t("Nutrición")}>
+      <Screen tab title={t("Nutrición")} floating={<CameraFab />}>
         {day.hasPhotoMeal ? null : <FirstMealCard />}
         <Card>
           <EmptyState title={t("Aún no hay objetivo nutricional")} action={<Button onPress={recalculate} loading={pending}>{t("Calcular ahora")}</Button>}>
@@ -90,7 +90,7 @@ export default function Nutrition() {
   const canAdjust = decision.action === "increase" || decision.action === "decrease";
 
   return (
-    <Screen tab title={t("Nutrición")}>
+    <Screen tab title={t("Nutrición")} floating={<CameraFab />}>
       {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
 
       {day.hasPhotoMeal ? null : <FirstMealCard />}

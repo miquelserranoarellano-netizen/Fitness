@@ -133,3 +133,33 @@ export function StepsCard({
     </Card>
   );
 }
+
+/**
+ * Botón redondo de la cámara que flota abajo en Nutrición, justo encima del icono de la pestaña, y se queda
+ * fijo al desplazar: abre la cámara para registrar una comida con una foto.
+ */
+export function CameraFab() {
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: "/comida/foto", params: { abrir: "camara" } })}
+      accessibilityRole="button"
+      accessibilityLabel={t("Hacer una foto de la comida")}
+      hitSlop={8}
+      style={({ pressed }) => ({
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.accent,
+        borderWidth: 4,
+        borderColor: colors.bg,
+        opacity: pressed ? 0.85 : 1,
+        elevation: 6,
+      })}
+    >
+      <Camera size={28} color={colors.accentInk} />
+    </Pressable>
+  );
+}

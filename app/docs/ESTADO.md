@@ -21,7 +21,8 @@ A petición de Miquel tras probarla:
   la web), calendario Día/Semana/Mes/Todo con días verdes y rojos, y «Escanea tu primera comida» hasta la
   primera comida con foto. Objetivo editable: calorías y reparto de macros en % (los gramos cuadran con las
   calorías); migración 3 para el motivo «manual».
-- **Botón de la cámara** en el centro de la barra de abajo: abre la cámara directamente desde cualquier pantalla.
+- **Botón de la cámara** flotante en Nutrición, justo encima del icono de la pestaña y fijo al desplazar: abre la
+  cámara directamente. La barra de abajo sigue con cinco pestañas (`floating` en `Screen`).
 - **Regla de día cumplido**: entre el 90 % y el 105 % del objetivo de ese día (`dayStatus`, `GOOD_RANGE`).
 - **Menús:** fuera «Historial» (lo cubre Análisis; el detalle de cada sesión sigue) y «Revisiones» del menú
   (siguen como aviso en Inicio cuando tocan).

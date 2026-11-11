@@ -15,6 +15,7 @@ export function Screen({
   description,
   children,
   footer,
+  floating,
   tab,
   contentStyle,
 }: {
@@ -26,6 +27,11 @@ export function Screen({
   footer?: ReactNode;
   /** Pantalla de pestaña: sin cabecera nativa, con margen superior seguro y título grande. */
   tab?: boolean;
+  /**
+   * Botón que flota abajo, en el centro, y se queda fijo al desplazar (en una pestaña, justo encima de su
+   * icono si es la del centro). Se deja hueco al final para que no tape el contenido.
+   */
+  floating?: ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
 }) {
   const colors = useColors();
@@ -35,7 +41,7 @@ export function Screen({
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[
-          { paddingHorizontal: space.lg, paddingTop: tab ? insets.top + space.lg : space.lg, paddingBottom: footer ? space.xl : space.xxl + insets.bottom, gap: space.lg },
+          { paddingHorizontal: space.lg, paddingTop: tab ? insets.top + space.lg : space.lg, paddingBottom: (footer ? space.xl : space.xxl + insets.bottom) + (floating ? 88 : 0), gap: space.lg },
           contentStyle,
         ]}
         keyboardShouldPersistTaps="handled"
@@ -50,6 +56,11 @@ export function Screen({
         ) : null}
         {children}
       </ScrollView>
+      {floating ? (
+        <View pointerEvents="box-none" style={{ position: "absolute", left: 0, right: 0, bottom: space.lg, alignItems: "center" }}>
+          {floating}
+        </View>
+      ) : null}
       {footer ? (
         <View
           style={{

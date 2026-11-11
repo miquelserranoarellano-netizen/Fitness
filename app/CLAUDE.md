@@ -1,9 +1,9 @@
 # Appcombinada · app
 
-App combinada de Smart Fitness Coach (Miquel) y SnapCal (Marc), hecha con Expo (SDK 57, Expo Router, Expo Go). Parte
+App combinada de Smart Fitness Coach (Miquel) y SnapCal (Marc), hecha con Expo (SDK 58, Expo Router, Expo Go). Parte
 de la app de Miquel; la fusión sigue `../fusion/PLAN-FUSION.md` (fases y decisiones) y `../fusion/PROMPT-FUSION-APPS.md`.
 Las apps originales están en `../originales/`: son solo de consulta, no se modifican. Lee también `AGENTS.md` (Expo
-cambia en cada SDK: consulta la documentación de la v57 antes de usar una API) y `docs/ESTADO.md`.
+cambia en cada SDK: consulta la documentación de la v58 antes de usar una API) y `docs/ESTADO.md`.
 
 - **Solo módulos incluidos en Expo Go.** Antes de añadir una dependencia, `npx expo install <paquete>` y comprueba
   que Expo Go la incluye; si no, la app dejaría de abrirse en Expo Go.
