@@ -1,7 +1,7 @@
 # Estado de la app
 
-Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
-en curso (fase 5 de 10 hecha).
+Última actualización: 11 de noviembre de 2026 · Lista para subir a Hostinger (prueba web de un mes) · Fusión con
+SnapCal en curso (fase 5 de 10 hecha).
 
 ## Portada de IKYNDO y Hostinger (11/11/2026)
 
@@ -17,6 +17,14 @@ en curso (fase 5 de 10 hecha).
   romper la app del App Store del fork.
 - **Comprobado:** la portada en local con las mismas cabeceras que Caddy (sin errores de CSP), en escritorio y en
   móvil, en claro y en oscuro. **Sin probar:** Caddy en el VPS (aquí no hay Docker).
+- **Auditoría antes de subir** (detalle en `../SEGURIDAD.md`): web compilada como en el VPS y servida con las
+  cabeceras de Caddy, con el servidor en producción detrás: cuestionario → rutina, código de acceso, comida por
+  código de barras y nada bloqueado por la CSP. `npm run check` (161 pruebas), `npm run i18n`, servidor con 45
+  pruebas y 0 avisos de dependencias. Nada que corregir. Lista de qué probar el primer día en
+  `../DESPLIEGUE.md` (paso 7).
+- **Detalle de aspecto, sin cambiar:** en Nutrición, el botón flotante de la cámara tapa lo que quede detrás sin
+  desplazar: en un móvil de 375 × 812, la cifra de carbohidratos; en ventanas más bajas, el centro del anillo. Es
+  fijo a propósito; si molesta en el móvil, se puede reservar hueco a su altura.
 
 ## Fusión con la rama de la app del móvil (11/11/2026)
 

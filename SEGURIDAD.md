@@ -56,6 +56,20 @@ que tenía (`deploy/Caddyfile`).
 - `www.<dominio>` redirige a la portada y `<dominio>/app`, a la app. Sin probar en el VPS, como el resto de Caddy;
   la CSP de la portada se probó en local con un servidor con las mismas cabeceras.
 
+### Auditoría antes de subir a Hostinger (11 de noviembre de 2026)
+
+Sin problemas nuevos que corregir. Comprobado:
+
+- **Web compilada como en el VPS** (`expo export --platform web` con `EXPO_PUBLIC_API_URL=/api`), servida con las
+  cabeceras del bloque `app.` del Caddyfile y el servidor en producción detrás: aislamiento entre orígenes activo
+  (SQLite), ningún error ni bloqueo de la CSP en la consola, cuestionario → rutina, código de acceso (cupo «0 de
+  40»), comida por código de barras (Open Food Facts) guardada, manifiesto e iconos.
+- **Servidor en producción:** no arranca sin `ACCESS_CODES`, CORS cerrado (mismo dominio), 45 pruebas.
+- **Dependencias:** servidor con 0 avisos; app con los mismos 5 moderados de herramientas de compilación (ver
+  «Riesgos aceptados»). `expo-doctor` no se pudo ejecutar (falla la propia herramienta al instalarse con `npx`).
+- **Configuración:** `docker-compose.yml`, imágenes, Caddyfile, `.env.example` y scripts del VPS coherentes con la
+  portada en el dominio y la app en `app.`. Lo único sin probar sigue siendo Docker y Caddy en el VPS real.
+
 Ya estaba bien hecho: la clave de Anthropic solo vive en el servidor; las respuestas se validan con Zod en los dos
 lados; los errores no enseñan detalles internos; las fotos se reducen y pierden los metadatos (ubicación incluida)
 antes de enviarse; los datos personales se quedan en el dispositivo.

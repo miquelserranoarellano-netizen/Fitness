@@ -19,6 +19,19 @@ su propio subdominio para no tocar la compilación de Expo y para que la portada
 - **HTTPS es obligatorio**, no un extra: sin él la web no arranca (SQLite en el navegador necesita una conexión
   segura y aislamiento entre orígenes) y el navegador no deja usar la cámara.
 
+## Qué contratar en Hostinger
+
+| En el carrito | Qué elegir |
+| --- | --- |
+| Plan | **KVM 1** (1 vCPU, 4 GB de RAM, 50 GB de disco). Sobra: la portada, la app y el servidor usan menos de 1 GB; los 4 GB son para compilar la web en el propio VPS |
+| Periodo | **1 mes** para la prueba (luego se puede alargar). Ojo con la renovación automática al precio normal (paso 8) |
+| Centro de datos | Uno en **Europa**, el más cercano a España que ofrezca |
+| Sistema operativo | **Ubuntu 24.04** a secas, sin panel ni aplicaciones |
+| Copia de seguridad diaria | **No**: en el VPS no hay datos de nadie que guardar |
+| Dominio | Si el plan no lo trae gratis, compra uno (`.com` o `.es`) en Hostinger o donde quieras |
+
+No hace falta un plan de *hosting web* (los compartidos no ejecutan Docker): tiene que ser un **VPS**.
+
 ## 0. Qué necesitas
 
 | Qué | Para qué |
@@ -154,6 +167,20 @@ curl https://app.tudominio.com/api/health
 
 En la web no hay lector de códigos con cámara (se escribe el número), ni fotos de progreso, ni se guarda la foto de
 cada comida: eso queda para la app del móvil.
+
+**Qué probar el primer día** (en el móvil, desde el icono de la pantalla de inicio):
+
+- [ ] La portada abre con candado (HTTPS) y «Entrar en la app» lleva a la app.
+- [ ] Cuestionario completo → informe inicial → Inicio con la rutina de hoy.
+- [ ] Empezar el entrenamiento, apuntar 2 o 3 series y terminarlo.
+- [ ] Más → Servidor y código de acceso: pegar el código y ver «Hoy llevas 0 de 40 análisis».
+- [ ] Nutrición → foto de un plato: sale el permiso de la IA, se acepta, reconoce los alimentos y se guarda.
+- [ ] Una comida escrita con texto y otra por código de barras (escribiendo el número).
+- [ ] Más → Apariencia e idioma: tema oscuro e inglés, y vuelta a español.
+- [ ] Perfil → Tus datos → Exportar: se descarga el archivo JSON.
+- [ ] Cerrar el navegador, volver a abrir el icono y comprobar que todo sigue ahí.
+
+Si algo falla, `docker compose logs --tail=100 api` (servidor) y `docker compose logs --tail=100 web` (Caddy).
 
 ## 8. Si solo es un mes
 
