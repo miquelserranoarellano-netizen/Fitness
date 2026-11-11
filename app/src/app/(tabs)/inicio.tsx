@@ -65,7 +65,7 @@ export default function Home() {
     : "";
 
   return (
-    <Screen tab eyebrow={weekdayText.charAt(0).toUpperCase() + weekdayText.slice(1)} title={t("Hola, {nombre}", { nombre: profile.displayName })} description={`${goalText}${blockText}`}>
+    <Screen tab eyebrow={weekdayText.charAt(0).toUpperCase() + weekdayText.slice(1)} title={profile.displayName ? t("Hola, {nombre}", { nombre: profile.displayName }) : t("Hola")} description={`${goalText}${blockText}`}>
       {tasks.length > 0 ? (
         <View style={{ gap: space.sm }}>
           {tasks.map((task) => (

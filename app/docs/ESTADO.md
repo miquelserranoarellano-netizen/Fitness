@@ -3,6 +3,22 @@
 Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
 en curso (fase 5 de 10 hecha).
 
+## Cuestionario inicial más corto y sin teclado (11/11/2026)
+
+A petición: el cuestionario pasa de 8 a 6 pasos y todo se elige, sin escribir.
+- **Selectores** (`src/components/Picker.tsx`): edad, altura, peso (kilos y decimales en dos columnas) y país
+  (`src/lib/countries.ts`) se eligen en una lista que sale desde abajo. Al cambiar de unidades, la altura y el peso
+  elegidos se convierten (`convertDraftUnits`). También en Perfil.
+- **Fuera del cuestionario** (siguen en Perfil o en Cuerpo): el nombre (ahora opcional; Inicio dice «Hola» sin
+  él), la fecha objetivo, los grupos débiles, el paso de medidas entero, las horas de sueño, el estrés, las comidas
+  al día y los textos de alimentación (otras alergias, alimentos que no comes o favoritos, presupuesto,
+  suplementos). Nada de eso entraba en los cálculos salvo las medidas, que se piden en «Cuerpo».
+- **Pasos al día** por tramos (menos de 5.000, de 5.000 a 8.000…, «No lo sé»), alineados con los umbrales del
+  cálculo de calorías.
+- **Comprobado:** `npm run check` (129 pruebas, 5 nuevas del cuestionario corto y del cambio de unidades) y
+  `expo export` para web y Android. **Por probar en el móvil:** que la lista se abra en el valor elegido y se
+  pueda desplazar bien.
+
 ## Segunda revisión de seguridad: datos y archivos (11/11/2026)
 
 Detalle en `../SEGURIDAD.md`. Fotos: las copias temporales de la caché se borran al terminar y con «Borrar todos mis

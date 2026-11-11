@@ -165,6 +165,21 @@ export function draftFromProfile(profile: ProfileInput, limitations: LimitationI
   };
 }
 
+/**
+ * Al cambiar de unidades, la altura y el peso ya elegidos se convierten (180 cm → 71 in), para que los
+ * selectores sigan marcando un valor válido. La altura queda en números enteros y el peso con un decimal.
+ */
+export function convertDraftUnits(draft: Pick<Draft, "units" | "height" | "weight">, units: Units): Partial<Draft> {
+  if (units === draft.units) return {};
+  const height = parseDecimal(draft.height);
+  const weight = parseDecimal(draft.weight);
+  return {
+    units,
+    height: height === null ? draft.height : String(Math.round(toDisplayLength(fromDisplayLength(height, draft.units), units))),
+    weight: weight === null ? draft.weight : String(roundDisplay(toDisplayWeight(fromDisplayWeight(weight, draft.units), units), 1)).replace(".", ","),
+  };
+}
+
 export type StepId =
   | "personal"
   | "goals"
@@ -185,7 +200,6 @@ const optionalNumber = (text: string): number | null | "invalid" => {
 export function validateStep(step: StepId, draft: Draft, options: { requireWeight: boolean } = { requireWeight: true }): string | null {
   switch (step) {
     case "personal": {
-      if (!draft.displayName.trim()) return "Dime cómo quieres que te llame.";
       const age = parseDecimal(draft.age);
       if (age === null || !Number.isInteger(age)) return "Indica tu edad en años.";
       if (age < 16) return "La aplicación está pensada para mayores de 16 años.";
@@ -250,11 +264,9 @@ export function validateStep(step: StepId, draft: Draft, options: { requireWeigh
       const steps = optionalNumber(draft.dailySteps);
       if (steps === "invalid" || (steps !== null && (steps < 0 || steps > 40000))) return "Revisa los pasos diarios.";
       if (!draft.jobActivity) return "Indica cómo es tu actividad en el trabajo.";
-      if (!draft.stressLevel) return "Indica tu nivel de estrés habitual.";
       return null;
     }
     case "nutrition": {
-      if (!draft.mealsPerDay) return "Indica cuántas comidas haces al día.";
       if (!draft.appetite) return "Indica si te cuesta comer suficiente.";
       if (!draft.dietPreference) return "Elige tu tipo de alimentación.";
       const budget = optionalNumber(draft.weeklyFoodBudget);
