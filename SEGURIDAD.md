@@ -19,6 +19,18 @@ Revisión del 10 de noviembre de 2026, antes de poner la app en un VPS para la p
 | Baja | 16 avisos de `npm audit` en la app. | 9 corregidos sin cambiar versiones mayores. Ver «Riesgos aceptados». |
 | Info | No se sabía quién usaba el servidor. | Registros `[uso]` (persona, ruta, resultado, tiempo) y `[acceso]` (códigos fallidos), nunca el contenido. |
 
+### Segunda revisión (11 de noviembre de 2026): datos y archivos del teléfono
+
+| Gravedad | Problema | Arreglo |
+| --- | --- | --- |
+| Media | **Copias de las fotos en la caché.** La cámara, la galería y el editor de imágenes dejan copias en la caché de la app, también de las fotos de progreso (fotos del cuerpo). Al borrar una foto, retirar el permiso o «Borrar todos mis datos», esas copias seguían en el teléfono hasta que el sistema necesitara espacio. | Cada copia temporal se borra en cuanto deja de hacer falta (`src/lib/temp-files.ts`), y «Borrar todos mis datos» vacía la caché de la app y la de miniaturas. Nunca se borra nada fuera de la caché. |
+| Media | **Fotos de comidas con la ruta completa.** En iOS la carpeta de la app cambia de ruta al actualizarla: tras una actualización, las fotos del diario dejaban de verse y ya no se borraban nunca (quedaban huérfanas). | Se buscan por su nombre en la carpeta actual (`mealPhotoDisplayUri`), al enseñarlas y al borrarlas. Las ya guardadas siguen valiendo, sin migración. |
+| Media | **Borrado de archivos a partir de una ruta guardada.** Bastaba con que la ruta contuviera `/meal-photos/` para borrar el archivo (`…/meal-photos/../`). Hoy solo la app escribe esas rutas, pero con la importación pendiente vendrían de un archivo de fuera. | Solo se borran archivos con nombres que crea la app (sin «/» ni «..»), siempre dentro de su carpeta. Igual con las fotos de progreso. |
+| Baja | **«Borrar todos mis datos» borraba primero las fotos.** Si fallaba algo después (o en la web, sin sistema de archivos), la base de datos quedaba con referencias a fotos que ya no existían, o sin borrar. | Primero la base de datos, después los archivos. Al añadir o quitar una foto de progreso tampoco quedan archivos sin referencia ni referencias sin archivo. |
+| Baja | **Los registros del servidor guardaban qué come cada persona** cuando fallaba USDA u Open Food Facts (la búsqueda y el código de barras). | Ya no: solo el error. Con prueba. |
+| Baja | Las notas de la IA y el nombre del alimento de la base de datos llegaban a la app sin tope. | Notas hasta 600 caracteres y nombres hasta 120. |
+| Baja | El contenedor de Caddy (expuesto a internet) corría con todas las capacidades de root. | Solo `NET_BIND_SERVICE` (abrir los puertos 80 y 443), `no-new-privileges` y límite de procesos. Sin probar en el VPS. |
+
 Ya estaba bien hecho: la clave de Anthropic solo vive en el servidor; las respuestas se validan con Zod en los dos
 lados; los errores no enseñan detalles internos; las fotos se reducen y pierden los metadatos (ubicación incluida)
 antes de enviarse; los datos personales se quedan en el dispositivo.

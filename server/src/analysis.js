@@ -293,7 +293,7 @@ export async function enrichItem(raw, language, avoid, lookupFood) {
     item.carbs_g = Math.round(match.carbs100 * factor);
     item.fat_g = Math.round(match.fat100 * factor);
     item.source = match.source; // "usda" | "off"
-    item.matched_name = match.matchedName;
+    item.matched_name = String(match.matchedName ?? "").slice(0, 120) || null;
     applyExtras(item, match, factor);
   }
   return item;
@@ -316,7 +316,10 @@ export function calorieRange(items) {
   return { min: Math.round(total * (1 - margin)), max: Math.round(total * (1 + margin)) };
 }
 
-export const emptyResult = (notes = "") => ({ is_food: false, dish_name: "", items: [], total_calories_min: 0, total_calories_max: 0, notes });
+/** Las notas de la IA se enseñan tal cual en la app: con tope, por si el modelo se alarga. */
+export const MAX_NOTES_CHARS = 600;
+
+export const emptyResult = (notes = "") => ({ is_food: false, dish_name: "", items: [], total_calories_min: 0, total_calories_max: 0, notes: String(notes).slice(0, MAX_NOTES_CHARS) });
 
 /** Convierte el análisis de la IA en el resultado que espera la app. */
 export async function buildResult(parsed, language, avoid, lookupFood) {
@@ -329,6 +332,6 @@ export async function buildResult(parsed, language, avoid, lookupFood) {
     items,
     total_calories_min: range.min,
     total_calories_max: range.max,
-    notes: String(parsed.notes || ""),
+    notes: String(parsed.notes || "").slice(0, MAX_NOTES_CHARS),
   };
 }

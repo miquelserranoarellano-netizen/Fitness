@@ -31,6 +31,7 @@ import {
 import { msg, t } from "@/i18n";
 import { appAlert } from "@/lib/alert";
 import { formatDate, today } from "@/lib/dates";
+import { clearAppCaches } from "@/lib/temp-files";
 import { downloadJson, isWeb } from "@/lib/web";
 import { radius, space, useColors } from "@/theme";
 
@@ -339,9 +340,12 @@ function DataCard() {
           style: "destructive",
           onPress: async () => {
             const done = await run(async (db) => {
+              // Primero la base de datos (si algo falla después, no quedan referencias a fotos que ya no
+              // existen); después las fotos y las copias temporales de la caché.
+              await deleteAllData(db);
               await deleteAllPhotos(db);
               deleteAllMealPhotos();
-              await deleteAllData(db);
+              await clearAppCaches();
               return true;
             });
             if (done) router.replace("/bienvenida");

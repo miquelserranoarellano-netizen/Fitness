@@ -187,3 +187,20 @@ describe("lookupBarcode", () => {
     assert.equal((await lookupBarcode("8410000000017")).name, "Galletas");
   });
 });
+
+describe("privacidad de los registros", () => {
+  test("si una base de datos falla, el aviso no dice qué se buscaba", async (t) => {
+    const warnings = [];
+    t.mock.method(console, "warn", (...args) => warnings.push(args.join(" ")));
+    globalThis.fetch = async () => {
+      throw new Error("sin red");
+    };
+    assert.equal(await lookupFood({ search_query_en: "secret salmon sashimi", name: "Sashimi", grams: 100, calories: 200 }), null);
+    await assert.rejects(lookupBarcode("8000500310427"), LookupUnavailableError);
+    assert.ok(warnings.length >= 3);
+    for (const line of warnings) {
+      assert.ok(!line.includes("salmon"), line);
+      assert.ok(!line.includes("8000500310427"), line);
+    }
+  });
+});

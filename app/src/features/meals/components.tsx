@@ -4,6 +4,7 @@ import { Camera, KeyRound, PencilLine, Plus, ScanBarcode, Star, UtensilsCrossed,
 import type { ReactNode } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { Button, Notice, Txt } from "@/components/ui";
+import { mealPhotoDisplayUri } from "@/data/meal-photos";
 import { t } from "@/i18n";
 import { ApiError, apiErrorMessage, isRetryable } from "@/lib/api";
 import { radius, space, useColors } from "@/theme";
@@ -127,8 +128,9 @@ function AddButton({ icon: Icon, label, onPress }: { icon: LucideIcon; label: st
 /** Miniatura de una comida: su foto o un icono. */
 export function MealThumb({ uri, size = 48 }: { uri: string | null; size?: number }) {
   const colors = useColors();
-  if (uri) {
-    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius.sm, backgroundColor: colors.raised }} contentFit="cover" accessibilityIgnoresInvertColors />;
+  const shown = mealPhotoDisplayUri(uri);
+  if (shown) {
+    return <Image source={{ uri: shown }} style={{ width: size, height: size, borderRadius: radius.sm, backgroundColor: colors.raised }} contentFit="cover" accessibilityIgnoresInvertColors />;
   }
   return (
     <View style={{ width: size, height: size, borderRadius: radius.sm, backgroundColor: colors.raised, alignItems: "center", justifyContent: "center" }}>

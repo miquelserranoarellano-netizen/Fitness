@@ -3,6 +3,18 @@
 Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
 en curso (fase 5 de 10 hecha).
 
+## Segunda revisión de seguridad: datos y archivos (11/11/2026)
+
+Detalle en `../SEGURIDAD.md`. Fotos: las copias temporales de la caché se borran al terminar y con «Borrar todos mis
+datos» (`src/lib/temp-files.ts`); las fotos de comidas se buscan por nombre en la carpeta actual (en iOS la ruta
+cambia al actualizar la app) y solo se borran archivos con nombres de la app; «Borrar todos mis datos» borra primero
+la base de datos. Servidor: los registros ya no guardan la búsqueda ni el código de barras, y notas y nombres llevan
+tope. Docker: Caddy sin capacidades de más.
+- **Comprobado:** `npm run check` (124 pruebas), `expo export` para Android y web, servidor con 39 pruebas (2
+  nuevas). La consulta de «foto en uso» con rutas de iOS antiguas y nuevas, probada aparte con SQLite.
+- **Por probar en el móvil:** hacer y borrar fotos de progreso y de comidas, y «Borrar todos mis datos». En el VPS:
+  que Caddy arranque con las capacidades recortadas.
+
 ## VPS, seguridad y versión web (10/11/2026)
 
 Para probar la app durante un mes desde el navegador antes del App Store. Guía en `../DESPLIEGUE.md`; revisión de
