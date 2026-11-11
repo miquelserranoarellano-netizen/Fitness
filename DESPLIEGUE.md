@@ -1,12 +1,17 @@
-# Despliegue en un VPS de IONOS
+# Despliegue en un VPS de Hostinger
 
-Guía para poner la app en internet durante la prueba (web) y dejar el servidor listo para la versión del
-App Store. Se hace una vez; después, actualizar es un comando.
+Guía para poner IKYNDO en internet durante la prueba (portada y app web) y dejar el servidor listo para la versión
+del App Store. Se hace una vez; después, actualizar es un comando.
 
 ```
-Navegador / móvil ──HTTPS 443──► Caddy (certificado, web, cabeceras de seguridad)
-                                    └── /api ──► servidor Node (solo red interna de Docker) ──► Anthropic, USDA, Open Food Facts
+Navegador / móvil ──HTTPS 443──► Caddy (certificados, cabeceras de seguridad)
+                                    ├── tudominio.com ──────► portada de IKYNDO (deploy/landing/: HTML y CSS)
+                                    └── app.tudominio.com ──► la app web
+                                          └── /api ──► servidor Node (solo red interna de Docker) ──► Anthropic, USDA, Open Food Facts
 ```
+
+«Entrar en la app» en la portada lleva a `tudominio.com/app`, que Caddy redirige a `app.tudominio.com`. La app va en
+su propio subdominio para no tocar la compilación de Expo y para que la portada no comparta origen con los datos.
 
 - **Los datos de cada persona no van al VPS**: entrenamientos, medidas y comidas se guardan en su navegador (o en
   su teléfono con la app). El servidor solo analiza comidas y no guarda nada; en el VPS solo hay registros y el
@@ -18,22 +23,31 @@ Navegador / móvil ──HTTPS 443──► Caddy (certificado, web, cabeceras d
 
 | Qué | Para qué |
 | --- | --- |
-| VPS Linux de IONOS con **Ubuntu 24.04** y **2 GB de RAM o más** | Con 1 GB funciona, pero compilar la web es lento (el script añade memoria de intercambio) |
-| Un **dominio** o subdominio, p. ej. `fitness.tudominio.com` | El certificado de HTTPS va asociado a un nombre |
+| VPS de Hostinger **KVM 1** (1 vCPU, 4 GB de RAM) con **Ubuntu 24.04** | Sobra para la prueba: hacen falta 2 GB de RAM para compilar la web con soltura; con 1 GB funciona, pero lento (el script añade memoria de intercambio) |
+| Un **dominio** propio, p. ej. `tudominio.com` | La portada va en el dominio y la app en `app.tudominio.com`: los certificados de HTTPS van asociados a esos nombres |
 | Clave de **Anthropic** con un **límite de gasto mensual** puesto en la consola | Análisis de fotos y textos |
 | Clave gratuita de **USDA** ([alta](https://fdc.nal.usda.gov/api-key-signup)) | Cifras de alimentos genéricos |
 | Acceso al repositorio de GitHub (es privado) | Descargar el código en el VPS |
 
-## 1. VPS, cortafuegos y dominio (panel de IONOS)
+## 1. VPS, cortafuegos y dominio (hPanel de Hostinger)
 
-1. Crea el VPS con **Ubuntu 24.04**. Apunta su **IP** y la contraseña de `root`.
-2. **Cortafuegos de IONOS** (Red → Políticas de firewall, la del VPS): permite **TCP 22, 80 y 443** (y UDP 443,
-   opcional, para HTTP/3). Si el 80 o el 443 están cerrados, no se puede emitir el certificado.
-3. **DNS** (Dominios → tu dominio → DNS): añade un registro **A** con nombre `fitness` y valor la IP del VPS. Si el
-   VPS tiene IPv6, un registro **AAAA** también. Comprueba desde tu PC que ya apunta:
+1. En **hPanel → VPS**, elige como sistema operativo **Ubuntu 24.04** a secas (sin panel de control ni aplicaciones:
+   Docker lo instala el paso 4). Pon una contraseña de `root` y apunta la **IP** del VPS.
+2. **Cortafuegos de Hostinger** (en la página del VPS, apartado de seguridad): si lo activas, permite **TCP 22, 80 y
+   443** (y UDP 443, opcional, para HTTP/3). Si no lo activas, el paso 4 deja el del propio VPS (`ufw`) con solo
+   esos puertos. Si el 80 o el 443 están cerrados, no se pueden emitir los certificados.
+3. **DNS** (hPanel → Dominios → tu dominio → DNS): pon la IP del VPS en el registro **A** de `@` (Hostinger lo trae
+   apuntando a su página de aparcamiento: cámbialo, no añadas otro) y añade otro registro **A** con nombre `app` y la
+   misma IP. Deja el `www` que suele traer (un CNAME al dominio): la portada lo redirige. Si el VPS tiene IPv6,
+   registros **AAAA** también. Si el dominio no es de Hostinger, haz lo mismo en el DNS de donde lo tengas.
+   Comprueba desde tu PC que los dos ya apuntan:
 
    ```bash
-   nslookup fitness.tudominio.com
+   nslookup tudominio.com
+   ```
+
+   ```bash
+   nslookup app.tudominio.com
    ```
 
 ## 2. Entrar por SSH con clave y cerrar la contraseña
@@ -55,7 +69,7 @@ VPS, desactiva las contraseñas (el `01-` del nombre importa: en Ubuntu manda el
 printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin prohibit-password\n' > /etc/ssh/sshd_config.d/01-endurecido.conf && sshd -t && systemctl reload ssh
 ```
 
-Si te quedas fuera, IONOS tiene una consola web (KVM) en el panel del VPS para entrar sin SSH.
+Si te quedas fuera, hPanel tiene una terminal en el navegador en la página del VPS para entrar sin SSH.
 
 ## 3. Descargar el código (clave de solo lectura)
 
@@ -104,7 +118,8 @@ echo "miquel:$(openssl rand -base64 18 | tr '+/' '-_')"
 echo "marc:$(openssl rand -base64 18 | tr '+/' '-_')"
 ```
 
-Edita `.env` (`nano .env`) y rellena `DOMAIN`, `ACME_EMAIL`, `ANTHROPIC_API_KEY`, `USDA_API_KEY` y
+Edita `.env` (`nano .env`) y rellena `DOMAIN` (el dominio a secas, `tudominio.com`), `ACME_EMAIL`,
+`ANTHROPIC_API_KEY`, `USDA_API_KEY` y
 `ACCESS_CODES` con las líneas de antes separadas por comas (`miquel:…,marc:…`). A cada persona pásale **solo su
 código** (lo de después de `:`), por un canal privado.
 
@@ -123,21 +138,30 @@ docker compose ps
 Comprueba desde tu PC que responde con `"auth":true`:
 
 ```bash
-curl https://fitness.tudominio.com/api/health
+curl https://app.tudominio.com/api/health
 ```
 
 ## 7. Probar desde el móvil
 
-1. Abre `https://fitness.tudominio.com`, haz el cuestionario y entra en **Más → Servidor y código de acceso**: pega
-   tu código y pulsa «Guardar y comprobar». Debe decir «Código de miquel · Hoy llevas 0 de 40 análisis».
-2. **iPhone: añádela a la pantalla de inicio** (Safari → Compartir → «Añadir a pantalla de inicio») y úsala desde
-   ese icono. Si se usa solo como pestaña de Safari, Safari puede borrar sus datos tras 7 días sin abrirla.
-   Android: Chrome → menú → «Instalar aplicación».
+1. Abre `https://tudominio.com`: sale la portada. Pulsa **«Entrar en la app»** (lleva a `https://app.tudominio.com`),
+   haz el cuestionario y entra en **Más → Servidor y código de acceso**: pega tu código y pulsa «Guardar y
+   comprobar». Debe decir «Código de miquel · Hoy llevas 0 de 40 análisis».
+2. **iPhone: añade la app a la pantalla de inicio** desde la app (`app.tudominio.com`), no desde la portada
+   (Safari → Compartir → «Añadir a pantalla de inicio»), y úsala desde ese icono. Si se usa solo como pestaña de
+   Safari, Safari puede borrar sus datos tras 7 días sin abrirla. Android: Chrome → menú → «Instalar aplicación».
 3. **Copia de seguridad**: Perfil → Tus datos → Exportar mis datos, de vez en cuando. Los datos viven solo en ese
    navegador.
 
 En la web no hay lector de códigos con cámara (se escribe el número), ni fotos de progreso, ni se guarda la foto de
 cada comida: eso queda para la app del móvil.
+
+## 8. Si solo es un mes
+
+- Quita la **renovación automática** en hPanel (Facturación) si no vas a seguir: si no, se renueva al precio normal.
+- Antes de apagar el VPS, pide a cada persona que **exporte sus datos** (Perfil → Tus datos): viven en su navegador
+  y, sin la web, no podrían abrirlos. Con esa copia los recuperan en otra web o en la app del móvil.
+- Guarda una copia de `.env` en tu PC (tiene los códigos de acceso). En el VPS no hay nada más que conservar: ni
+  la «copia de seguridad diaria» de Hostinger hace falta.
 
 ## Día a día
 
@@ -158,7 +182,8 @@ al reiniciar el servidor.
 
 | Síntoma | Causa probable |
 | --- | --- |
-| No hay certificado (`docker compose logs web` habla de ACME) | El DNS aún no apunta al VPS, o el 80/443 está cerrado en el cortafuegos de IONOS |
+| No hay certificado (`docker compose logs web` habla de ACME) | El DNS aún no apunta al VPS, o el 80/443 está cerrado en el cortafuegos de Hostinger |
+| La portada abre pero «Entrar en la app» da error | Falta el registro **A** de `app` en el DNS (o aún no se ha propagado) |
 | `api` no arranca: «hace falta ACCESS_CODES» o «no es válido» | Falta `ACCESS_CODES` en `.env`, o un código tiene menos de 16 caracteres |
 | La web sale en blanco o con un error de SQLite | Se ha abierto por `http://` o por la IP, no por `https://` y el dominio |
 | La app dice «Falta tu código de acceso» | Código mal copiado (sin espacios) o retirado de `ACCESS_CODES` |
@@ -171,10 +196,10 @@ El servidor ya sirve tal cual para la app nativa. Lo que falta, por orden:
 1. **Apple Developer Program** (99 € al año) y una cuenta de Expo.
 2. En `app/app.json`: `ios.bundleIdentifier` (p. ej. `com.tunombre.fitnesscoach`) y un **icono propio** (el actual
    es el de ejemplo de Expo).
-3. Compilar con EAS (`npx eas-cli build -p ios`) poniendo `EXPO_PUBLIC_API_URL=https://fitness.tudominio.com/api`
+3. Compilar con EAS (`npx eas-cli build -p ios`) poniendo `EXPO_PUBLIC_API_URL=https://app.tudominio.com/api`
    en `eas.json`. Con un dominio fijo no hace falta tocar nada más.
 4. **TestFlight** con las mismas personas de la prueba antes de enviarla a revisión.
-5. Para la revisión de Apple: **política de privacidad** publicada (puede ir en el mismo dominio), la ficha de
+5. Para la revisión de Apple: **política de privacidad** publicada (puede ir junto a la portada), la ficha de
    privacidad (las fotos y textos de comida van a tu servidor y a Anthropic; nada de seguimiento), un **código de
    acceso de demostración** en las notas para el revisor y avisos de salud. Apple pide además consentimiento
    explícito antes de enviar datos personales a una IA de terceros: conviene una pantalla de permiso antes del

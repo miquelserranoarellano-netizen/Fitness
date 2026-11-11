@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prepara un VPS Ubuntu 24.04 recién creado (IONOS) para la app: Docker, cortafuegos, actualizaciones de
+# Prepara un VPS Ubuntu 24.04 recién creado (Hostinger u otro) para la app: Docker, cortafuegos, actualizaciones de
 # seguridad automáticas, fail2ban para SSH y memoria de intercambio. Una sola vez, como root:
 #   sudo bash deploy/setup-vps.sh
 # No toca la configuración de SSH: eso va a mano (DESPLIEGUE.md, paso 2), para no dejarte fuera.

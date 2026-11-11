@@ -3,6 +3,18 @@
 Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
 en curso (fase 5 de 10 hecha).
 
+## Portada de IKYNDO y Hostinger (11/11/2026)
+
+- **Portada** (`../deploy/landing/`): página de presentación de IKYNDO con el logo y el aspecto de la app (colores
+  de `src/theme.ts`, claro u oscuro según el sistema), sin JavaScript. Va en `tudominio.com` y «Entrar en la app»
+  lleva a `app.tudominio.com`, donde está la app (Caddyfile con tres sitios: portada, `www` y `app`).
+- **VPS:** Hostinger KVM 1 durante un mes; `../DESPLIEGUE.md` pasa de IONOS a Hostinger, con un apartado para
+  acabar la prueba (quitar la renovación, exportar los datos antes de apagar).
+- **Sin Expo Go:** fuera de las guías y scripts el uso con Expo Go (QR, WSL «mirrored», `npm run tunnel`). El código
+  no cambia: la app del App Store sigue saliendo de aquí con EAS.
+- **Comprobado:** la portada en local con las mismas cabeceras que Caddy (sin errores de CSP), en escritorio y en
+  móvil, en claro y en oscuro. **Sin probar:** Caddy en el VPS (aquí no hay Docker).
+
 ## Fusión con la rama de la app del móvil (11/11/2026)
 
 La app del móvil (repositorio `mdjoyanes/fitneesduo`, que sale del commit `30ecd7b` de este) y la del VPS vuelven a
@@ -15,8 +27,8 @@ y el botón flotante con el permiso de la IA (sin permiso, el botón enseña ant
   la web se divide por pantallas y sigue funcionando con la CSP de Caddy), y en el navegador: Inicio con una base
   de datos anterior (la migración 3 se aplica sola), Nutrición con el anillo y el botón de cámara, el permiso de la
   IA antes de abrir la cámara y el selector de edad en Perfil.
-- **Pendiente:** 129 textos nuevos de esta rama (permiso de la IA, servidor, importar copias, avisos de rutina) sin
-  traducir al inglés, francés y alemán: en esos idiomas salen en español (`npm run i18n` los lista).
+- **Traducidos después:** los 129 textos nuevos de esta rama (permiso de la IA, servidor, importar copias, página
+  de «no encontrada») ya están en inglés, francés y alemán; `npm run i18n` no da nada pendiente.
 
 ## Fallos, aspecto y rendimiento (11/11/2026)
 

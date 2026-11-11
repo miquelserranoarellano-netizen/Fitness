@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IKYNDO · Entrena, nútrete, evoluciona</title>
+  <meta name="description" content="IKYNDO te prepara una rutina de hipertrofia a tu medida, te propone las cargas de cada sesión y lleva tus comidas con una foto. Sin cuenta: tus datos se quedan en tu dispositivo.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#08090a" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/logo.jpg">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- Portada de IKYNDO, con el aspecto de la app (colores de app/src/theme.ts, claro u oscuro según el sistema).
+       Sin JavaScript: «Entrar en la app» va a /app, que Caddy redirige a app.<dominio>. -->
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="IKYNDO, inicio">
+        <span class="brand-mark" aria-hidden="true"><img src="/logo.jpg" alt="" width="1254" height="1254"></span>
+        <span class="brand-name">IKYNDO</span>
+      </a>
+      <a class="btn btn-primary btn-sm" href="/app">Entrar en la app</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-text">
+          <p class="label">Entrena · Nútrete · Evoluciona</p>
+          <h1>Un plan de entrenamiento y comida que se ajusta a tus datos.</h1>
+          <p class="lead">IKYNDO te prepara una rutina de hipertrofia según tus días, tu material y tus molestias, te propone las cargas de cada sesión y lleva tus comidas con una foto. Con lo que registras, revisa cómo vas y ajusta lo que haga falta.</p>
+          <div class="actions">
+            <a class="btn btn-primary btn-lg" href="/app">
+              Entrar en la app
+              <svg class="i" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </a>
+            <a class="btn btn-secondary btn-lg" href="#como-funciona">Cómo funciona</a>
+          </div>
+          <ul class="dots facts">
+            <li>Sin cuenta ni registro</li>
+            <li>Tus datos, en tu dispositivo</li>
+            <li>Español, English, Français, Deutsch</li>
+          </ul>
+        </div>
+        <div class="hero-art">
+          <img class="logo-tile" src="/logo.jpg" alt="Logotipo de IKYNDO" width="1254" height="1254">
+        </div>
+      </div>
+    </section>
+
+    <section id="que-hace">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="label">Qué hace IKYNDO</p>
+          <h2>Entrenamiento, alimentación y progreso, en una sola app.</h2>
+        </div>
+        <div class="grid-3">
+          <article class="card">
+            <span class="icon"><svg class="i" aria-hidden="true" viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg></span>
+            <h3>Entrena</h3>
+            <p class="muted">Respondes un cuestionario (objetivo, días, minutos por sesión, material y lesiones) y te sale una rutina de hipertrofia por bloques. En cada sesión apuntas tus series y la app te propone las cargas para la próxima vez.</p>
+            <ul class="dots">
+              <li>66 ejercicios con consejos de técnica</li>
+              <li>¿Un ejercicio te molesta? Lo cambias por otro que trabaja lo mismo</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="icon"><svg class="i" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg></span>
+            <h3>Nútrete</h3>
+            <p class="muted">Haz una foto a tu plato, descríbelo con tus palabras o escribe su código de barras: la IA reconoce los alimentos y tú revisas las cantidades antes de guardar. Tu objetivo de calorías y macros se corrige con la tendencia real de tu peso.</p>
+            <ul class="dots">
+              <li>Avisos si una comida puede llevar algo que evitas</li>
+              <li>Agua y pasos del día</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="icon"><svg class="i" aria-hidden="true" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg></span>
+            <h3>Evoluciona</h3>
+            <p class="muted">Registra tu peso y tus medidas y mira su evolución. Al acabar cada bloque, IKYNDO mantiene lo que funciona y cambia solo lo que tus datos justifican: más series donde te has estancado, otro ejercicio si algo molesta o una descarga si hay fatiga.</p>
+            <ul class="dots">
+              <li>Resumen semanal y gráficos de evolución</li>
+              <li>El siguiente bloque se adapta a lo que has hecho</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="como-funciona">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="label">Cómo funciona</p>
+          <h2>Empiezas en unos minutos.</h2>
+        </div>
+        <ol class="grid-3 steps">
+          <li class="card">
+            <span class="step" aria-hidden="true">1</span>
+            <h3>Cuéntale cómo entrenas</h3>
+            <p class="muted">Objetivo, días, material, experiencia y molestias. Son unos minutos y no hace falta cuenta.</p>
+          </li>
+          <li class="card">
+            <span class="step" aria-hidden="true">2</span>
+            <h3>Entrena y apunta</h3>
+            <p class="muted">Sigue la sesión del día y registra tus series y tus comidas. Las cuentas las hace la app.</p>
+          </li>
+          <li class="card">
+            <span class="step" aria-hidden="true">3</span>
+            <h3>Revisa y ajusta</h3>
+            <p class="muted">Mira cómo vas cada semana. Al acabar el bloque, el siguiente se adapta a lo que has hecho.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="privacidad">
+      <div class="wrap privacy">
+        <div class="section-head">
+          <p class="label">Privacidad</p>
+          <h2>Tus datos se quedan contigo.</h2>
+          <p class="muted">IKYNDO no tiene cuentas ni guarda tus datos en ningún servidor. Lo que registras vive en tu móvil o en tu navegador, y tú decides qué sale.</p>
+        </div>
+        <ul class="card rows">
+          <li>
+            <svg class="i" aria-hidden="true" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div><strong>Sin cuentas</strong><span>No te registras ni das tu correo. Tus entrenamientos, medidas y comidas se guardan en tu dispositivo.</span></div>
+          </li>
+          <li>
+            <svg class="i" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+            <div><strong>Solo sale lo que tú analizas</strong><span>La foto o el texto de una comida, con tus alergias, pasa por el servidor de IKYNDO (que no lo guarda) hasta Claude, la IA de Anthropic. Te pedimos permiso antes del primer análisis.</span></div>
+          </li>
+          <li>
+            <svg class="i" aria-hidden="true" viewBox="0 0 24 24"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M8 6h8"/><path d="M16 14v4"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+            <div><strong>Números con reglas claras</strong><span>Las calorías, las cargas y los ajustes salen de reglas explícitas sobre tus datos, no de la IA.</span></div>
+          </li>
+          <li>
+            <svg class="i" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            <div><strong>Tu copia, cuando quieras</strong><span>Exporta todo en un archivo y llévatelo a otro navegador o al móvil.</span></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="empezar">
+      <div class="wrap">
+        <div class="card card-highlight cta">
+          <h2>¿Empezamos?</h2>
+          <p class="muted">Abre la app, responde el cuestionario y tendrás tu primera rutina y tu objetivo de calorías al momento.</p>
+          <a class="btn btn-primary btn-lg" href="/app">
+            Entrar en la app
+            <svg class="i" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <div class="notices">
+            <div class="notice">
+              <strong>Análisis con IA</strong>
+              <span>Necesitas un código de acceso: pídeselo a quien te ha invitado a la prueba. Todo lo demás funciona sin él.</span>
+            </div>
+            <div class="notice">
+              <strong>En el iPhone</strong>
+              <span>Abre la app en Safari y añádela a la pantalla de inicio (Compartir → Añadir a pantalla de inicio): así Safari no borra tus datos.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p><strong>IKYNDO</strong> · versión de prueba</p>
+      <p>IKYNDO te ayuda a organizarte; no hace diagnósticos médicos. Si tienes dolor o una lesión, consulta a un profesional sanitario antes de entrenar.</p>
+    </div>
+  </footer>
+</body>
+</html>

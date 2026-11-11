@@ -9,4 +9,4 @@ docker compose up -d --build
 docker image prune -f
 docker compose ps
 echo
-echo "Comprueba: curl -s https://\$(grep '^DOMAIN=' .env | cut -d= -f2)/api/health"
+echo "Comprueba: curl -s https://app.\$(grep '^DOMAIN=' .env | cut -d= -f2)/api/health"

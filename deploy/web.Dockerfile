@@ -1,5 +1,5 @@
-# Web de la app (Expo para navegador) servida por Caddy, que además pone HTTPS y pasa /api al servidor.
-# Se construye desde docker-compose.yml (contexto: la raíz del repositorio).
+# Portada de IKYNDO y web de la app (Expo para navegador) servidas por Caddy, que además pone HTTPS y pasa /api
+# al servidor. Se construye desde docker-compose.yml (contexto: la raíz del repositorio).
 
 # 1. Compilar la web.
 FROM node:24-bookworm-slim AS build
@@ -12,11 +12,14 @@ COPY app/ ./
 ARG EXPO_PUBLIC_API_URL=/api
 ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
 RUN npx expo export --platform web --output-dir dist
+# La portada no se compila: HTML, CSS y el logo.
+COPY deploy/landing/ /landing/
 # Versiones .br y .gz de cada archivo, para que Caddy no tenga que comprimir en cada visita.
 COPY deploy/precompress.mjs /tmp/precompress.mjs
-RUN node /tmp/precompress.mjs dist
+RUN node /tmp/precompress.mjs dist && node /tmp/precompress.mjs /landing
 
-# 2. Servirla.
+# 2. Servirlas.
 FROM caddy:2-alpine
 COPY deploy/Caddyfile /etc/caddy/Caddyfile
-COPY --from=build /app/dist /srv
+COPY --from=build /app/dist /srv/app
+COPY --from=build /landing /srv/landing

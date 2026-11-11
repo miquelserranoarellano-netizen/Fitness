@@ -1,12 +1,14 @@
 # Appcombinada · app
 
-App combinada de Smart Fitness Coach (Miquel) y SnapCal (Marc), hecha con Expo (SDK 58, Expo Router, Expo Go). Parte
+App combinada de Smart Fitness Coach (Miquel) y SnapCal (Marc), hecha con Expo (SDK 58, Expo Router). Parte
 de la app de Miquel; la fusión sigue `../fusion/PLAN-FUSION.md` (fases y decisiones) y `../fusion/PROMPT-FUSION-APPS.md`.
 Las apps originales están en `../originales/`: son solo de consulta, no se modifican. Lee también `AGENTS.md` (Expo
 cambia en cada SDK: consulta la documentación de la v58 antes de usar una API) y `docs/ESTADO.md`.
 
-- **Solo módulos incluidos en Expo Go.** Antes de añadir una dependencia, `npx expo install <paquete>` y comprueba
-  que Expo Go la incluye; si no, la app dejaría de abrirse en Expo Go.
+- **Web y App Store, un solo código.** La app se publica como web en el VPS de Hostinger (`app.<dominio>`, con la
+  portada de IKYNDO en el dominio: `../DESPLIEGUE.md`) y la del App Store sale de este mismo código con EAS. Antes
+  de añadir una dependencia, `npx expo install <paquete>` y comprueba que funciona en la web (o escóndela con
+  `isWeb`) sin romper la compilación nativa.
 - **Dos mundos separados**: `src/domain/` son cálculos puros con pruebas; un número nunca sale de la interfaz ni de
   una IA. `src/domain/` viene de la web de Miquel (`smart-fitness-coach`); lo útil de SnapCal (`lib/plan.ts`,
   `stats.ts`, `weekly.ts`) se pasa aquí como funciones puras con pruebas, sin duplicar cálculos.
@@ -47,8 +49,7 @@ cambia en cada SDK: consulta la documentación de la v58 antes de usar una API) 
   otros dominios.
 - No construir nada que parezca funcionar sin funcionar. Salud: no diagnosticar, no recomendar entrenar con dolor,
   no dietas extremas.
-- Comprobaciones: `npm run check` (tipos de app y de pruebas, lint y vitest) y `npx expo export --platform android`
-  para validar el empaquetado. `npx expo-doctor` para dependencias.
-- Desarrollo en WSL: el móvil solo ve el servidor con la red «mirrored» de WSL (`npm start`) o con túnel
-  (`npm run tunnel`). `npx expo start --web --port 8082` sirve para revisar pantallas en el navegador (el 8081 puede
-  estar ocupado por la app original). En web, SQLite es experimental.
+- Comprobaciones: `npm run check` (tipos de app y de pruebas, lint y vitest), `npx expo export --platform web` (lo
+  que se publica) y `--platform android` para validar el empaquetado nativo. `npx expo-doctor` para dependencias.
+- Desarrollo: `npm run web` (o `npx expo start --web --port 8082`) abre la app en el navegador. En web, SQLite es
+  experimental.

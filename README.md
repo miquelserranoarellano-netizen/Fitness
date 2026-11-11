@@ -11,8 +11,9 @@ con rutina por reglas, modo entrenamiento, seguimiento de peso y medidas y revis
 
 | Carpeta | Contenido |
 | --- | --- |
-| [`app/`](app/) | La app (Expo SDK 57, Expo Router, SQLite en el teléfono). Normas en `app/CLAUDE.md` |
+| [`app/`](app/) | La app (Expo SDK 58, Expo Router, SQLite en el navegador o en el teléfono). Normas en `app/CLAUDE.md` |
 | [`server/`](server/) | Servidor que analiza fotos y textos de comida con Claude y busca las cifras en USDA y Open Food Facts |
+| [`deploy/`](deploy/) | Caddy, imagen de la web, portada de IKYNDO (`deploy/landing/`) y scripts del VPS |
 | [`fusion/`](fusion/) | El encargo, los resúmenes de las dos apps de partida y el plan de fusión |
 
 ## Arrancar la app
@@ -22,11 +23,11 @@ Hace falta Node 22 o superior.
 ```bash
 cd app
 npm ci
-npm start        # escanear el QR con Expo Go (SDK 57)
+npm run web      # la app en el navegador
 npm run check    # tipos, lint y pruebas
 ```
 
-Más detalles (WSL, móvil en la misma wifi) en [`app/README.md`](app/README.md).
+Más detalles en [`app/README.md`](app/README.md).
 
 ## Arrancar el servidor
 
@@ -45,6 +46,7 @@ La app lo busca en el mismo ordenador, puerto 3000; para cambiarlo, `app/.env.ex
 
 ## En internet (VPS)
 
-La web de la app y el servidor van juntos en un VPS con Docker y HTTPS automático (Caddy): `docker compose up -d
---build` en la raíz, con el `.env` de [`.env.example`](.env.example). Paso a paso para IONOS, incluido el camino al
-App Store, en [`DESPLIEGUE.md`](DESPLIEGUE.md). Revisión de seguridad en [`SEGURIDAD.md`](SEGURIDAD.md).
+La portada de IKYNDO (`deploy/landing/`), la web de la app y el servidor van juntos en un VPS con Docker y HTTPS
+automático (Caddy): `docker compose up -d --build` en la raíz, con el `.env` de [`.env.example`](.env.example).
+La portada queda en `tudominio.com` y la app en `app.tudominio.com`. Paso a paso para Hostinger, incluido el camino
+al App Store, en [`DESPLIEGUE.md`](DESPLIEGUE.md). Revisión de seguridad en [`SEGURIDAD.md`](SEGURIDAD.md).
