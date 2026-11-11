@@ -21,7 +21,6 @@ export default function More() {
     { value: "system", label: t("Sistema") },
     ...AVAILABLE_LANGUAGES.map((code) => ({ value: code, label: LANGUAGE_NAMES[code] })),
   ];
-  const pendingLanguages = (["en", "fr", "de"] as const).filter((code) => !AVAILABLE_LANGUAGES.includes(code));
 
   return (
     <Screen tab title={t("Más")}>
@@ -50,10 +49,7 @@ export default function More() {
           </View>
           <View style={{ gap: space.sm }}>
             <Txt variant="label">{t("Idioma")}</Txt>
-            <Segmented options={languageOptions} value={preferences.language} onChange={setLanguagePreference} />
-            {pendingLanguages.length > 0 ? (
-              <Txt variant="tiny">{t("Inglés, francés y alemán llegarán cuando esté terminada la traducción de toda la app.")}</Txt>
-            ) : null}
+            <Segmented columns={3} options={languageOptions} value={preferences.language} onChange={setLanguagePreference} />
           </View>
         </View>
       </Card>

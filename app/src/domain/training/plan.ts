@@ -1,3 +1,4 @@
+import { labels } from "@/i18n";
 import { EXERCISES, type Exercise, type Pattern } from "../exercises";
 import {
   BODY_AREA_LABEL,
@@ -20,14 +21,14 @@ import {
 
 export type SplitId = "full_body_2" | "full_body_3" | "upper_lower_4" | "upper_lower_arms_5" | "ulppl_5" | "ppl_6";
 
-export const SPLIT_LABEL: Record<SplitId, string> = {
+export const SPLIT_LABEL: Record<SplitId, string> = labels({
   full_body_2: "Cuerpo completo · 2 días",
   full_body_3: "Cuerpo completo · 3 días",
   upper_lower_4: "Torso-pierna · 4 días",
   upper_lower_arms_5: "Torso-pierna + brazos y hombros · 5 días",
   ulppl_5: "Torso-pierna + empuje-tirón-pierna · 5 días",
   ppl_6: "Empuje-tirón-pierna · 6 días",
-};
+});
 
 export type PlanInput = {
   level: Level;

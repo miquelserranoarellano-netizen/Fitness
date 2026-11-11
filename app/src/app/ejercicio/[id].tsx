@@ -47,8 +47,8 @@ export default function ExerciseScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: exercise.name }} />
-      <Screen title={exercise.name}>
+      <Stack.Screen options={{ title: t(exercise.name) }} />
+      <Screen title={t(exercise.name)}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
           <Badge tone="accent">{MUSCLE_LABEL[exercise.primary]}</Badge>
           {exercise.secondary.map((muscle) => (
@@ -94,7 +94,7 @@ export default function ExerciseScreen() {
         </Card>
         <Card>
           <CardHeader title={t("Consejos de ejecución")} />
-          <Bullets items={exercise.cues} textVariant="muted" />
+          <Bullets items={exercise.cues.map((cue) => t(cue))} textVariant="muted" />
         </Card>
         <Card>
           <CardHeader title={t("Alternativas equivalentes")} description={t("Por si la máquina está ocupada, no la hay o el ejercicio te molesta.")} />
@@ -108,7 +108,7 @@ export default function ExerciseScreen() {
                   style={{ height: 36, paddingHorizontal: 14, borderRadius: radius.full, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: colors.raised, justifyContent: "center" }}
                 >
                   <Txt variant="small" style={{ color: colors.fg, fontWeight: "500" }}>
-                    {alternative.name}
+                    {t(alternative.name)}
                   </Txt>
                 </Pressable>
               ) : null;

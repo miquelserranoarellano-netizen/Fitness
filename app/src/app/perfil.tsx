@@ -139,7 +139,7 @@ function ProfileEditor({ profile }: { profile: Profile }) {
       const problem = validateStep(section.id, draft, { requireWeight: false });
       if (problem) {
         setOpen(section.id);
-        return setResult({ error: problem });
+        return setResult({ error: t(problem) });
       }
     }
     const response = await run((db) => updateProfile(db, profileFromDraft(draft)));

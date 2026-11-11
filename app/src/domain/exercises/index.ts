@@ -1,3 +1,4 @@
+import { t } from "@/i18n";
 import { LEGS } from "./legs";
 import { PULL } from "./pull";
 import { PUSH } from "./push";
@@ -20,8 +21,9 @@ export function requireExercise(id: string): Exercise {
   return exercise;
 }
 
+/** Nombre del ejercicio en el idioma activo. */
 export function exerciseName(id: string): string {
-  return BY_ID.get(id)?.name ?? "Ejercicio retirado del catálogo";
+  return t(BY_ID.get(id)?.name ?? "Ejercicio retirado del catálogo");
 }
 
 export const EXERCISE_IDS = EXERCISES.map((exercise) => exercise.id);

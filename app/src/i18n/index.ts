@@ -16,6 +16,10 @@
  * Este módulo no depende de React Native: lo usan también las pruebas.
  */
 
+import de from "./catalogs/de";
+import en from "./catalogs/en";
+import fr from "./catalogs/fr";
+
 export type Language = "es" | "en" | "fr" | "de";
 export type LanguagePreference = "system" | Language;
 export type Params = Record<string, string | number>;
@@ -27,10 +31,11 @@ export const LANGUAGE_NAMES: Record<Language, string> = { es: "Español", en: "E
 const LOCALE_TAGS: Record<Language, string> = { es: "es-ES", en: "en-GB", fr: "fr-FR", de: "de-DE" };
 
 /**
- * Catálogos de traducción. Vacío a propósito hasta la fase 10 de la fusión (traducción a EN, FR y DE):
- * hasta entonces solo se ofrece el español, para no mostrar una app a medio traducir.
+ * Catálogos de traducción (`catalogs/`), con el texto en español como clave. Se generan a partir de todos los
+ * textos de `t()`, `tn()`, `msg()` y `labels()` de la app; lo que falte se muestra en español. Los textos que
+ * forma el motor con datos (explicaciones de la rutina, ajustes, avisos de los informes) siguen en español.
  */
-const CATALOGS: Partial<Record<Exclude<Language, "es">, Catalog>> = {};
+const CATALOGS: Partial<Record<Exclude<Language, "es">, Catalog>> = { en, fr, de };
 
 /** Idiomas que se pueden elegir: el español y los que tengan catálogo. */
 export const AVAILABLE_LANGUAGES: Language[] = ["es", ...(Object.keys(CATALOGS) as Language[])];
@@ -84,6 +89,19 @@ export function isSingular(count: number, language: Language = current): boolean
  */
 export function tn(count: number, singular: string, plural: string, params?: Params): string {
   return t(isSingular(count) ? singular : plural, { n: count.toLocaleString(localeTag()), ...params });
+}
+
+/**
+ * Tabla de etiquetas (o lista) que se traduce al leerla: `GOAL_LABEL.fat_loss` devuelve el texto en el
+ * idioma activo. Así las etiquetas del dominio se pueden usar tal cual en cualquier pantalla.
+ */
+export function labels<T extends object>(table: T): T {
+  return new Proxy(table, {
+    get(target, key, receiver) {
+      const value = Reflect.get(target, key, receiver) as unknown;
+      return typeof value === "string" ? t(value) : value;
+    },
+  });
 }
 
 /** Marca un texto para traducirlo más tarde con `t()` (constantes definidas fuera de un componente). */

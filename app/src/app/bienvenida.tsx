@@ -72,7 +72,7 @@ function Wizard({ initial }: { initial: Saved | null }) {
   const next = () => {
     if (step.id !== "summary" && step.id !== "intro") {
       const problem = validateStep(step.id, draft);
-      if (problem) return setError(problem);
+      if (problem) return setError(t(problem));
     }
     go(index + 1);
   };
@@ -83,7 +83,7 @@ function Wizard({ initial }: { initial: Saved | null }) {
       const problem = validateStep(candidate.id, draft);
       if (problem) {
         go(stepIndex);
-        return setError(problem);
+        return setError(t(problem));
       }
     }
     const result = await run((database) => completeOnboarding(database, onboardingFromDraft(draft)));

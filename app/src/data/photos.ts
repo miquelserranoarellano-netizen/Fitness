@@ -1,3 +1,4 @@
+import { labels } from "@/i18n";
 import { Directory, File, Paths } from "expo-file-system";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { nowIso, type Db, type Queryable } from "@/db/types";
@@ -14,7 +15,7 @@ import { setPhotosConsent } from "./profile";
 
 export type Pose = "front" | "side" | "back" | "other";
 
-export const POSE_LABEL: Record<Pose, string> = { front: "Frente", side: "Perfil", back: "Espalda", other: "Otra" };
+export const POSE_LABEL: Record<Pose, string> = labels({ front: "Frente", side: "Perfil", back: "Espalda", other: "Otra" });
 
 export type PhotoMeta = { id: string; date: string; pose: Pose; uri: string; width: number | null; height: number | null };
 

@@ -3,6 +3,15 @@
 Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
 en curso (fase 5 de 10 hecha).
 
+## Inglés, francés y alemán (11/11/2026)
+
+Los cuatro idiomas se pueden elegir en Más → Apariencia e idioma (o «Sistema»). Catálogos en `src/i18n/catalogs/`
+con los 1.331 textos de la interfaz, las etiquetas (`labels()` en `domain/types.ts` y demás) y los 66 ejercicios
+con sus consejos. Validaciones del cuestionario traducidas. `npm run i18n` dice si falta alguna traducción.
+- **Siguen en español:** los textos que forma el motor con datos (por qué esta rutina, ajustes de calorías,
+  informes semanales y mensuales) y algunos errores de la capa de datos. Es el resto de la antigua fase 10.
+- **Comprobado:** `npm run check` (146 pruebas) y `npm run i18n` (nada pendiente).
+
 ## Nutrición nueva, menús, informe editable y CSV (11/11/2026)
 
 A petición de Miquel tras probarla:
