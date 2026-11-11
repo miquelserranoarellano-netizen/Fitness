@@ -19,6 +19,20 @@ Revisión del 10 de noviembre de 2026, antes de poner la app en un VPS para la p
 | Baja | 16 avisos de `npm audit` en la app. | 9 corregidos sin cambiar versiones mayores. Ver «Riesgos aceptados». |
 | Info | No se sabía quién usaba el servidor. | Registros `[uso]` (persona, ruta, resultado, tiempo) y `[acceso]` (códigos fallidos), nunca el contenido. |
 
+### Segunda revisión (11 de noviembre de 2026)
+
+| Gravedad | Problema | Arreglo |
+| --- | --- | --- |
+| Media | Se podían probar códigos de acceso sin freno (solo el límite general por minuto). | Tras 10 códigos incorrectos, esa dirección queda bloqueada 10 minutos (`auth_blocked`); los aciertos no cuentan. |
+| Media | Una sola persona podía ocupar todos los análisis a la vez; si cancelaba, la petición a la IA seguía (y se pagaba). | Máximo de 2 análisis a la vez por persona; al cancelar se corta la petición a Anthropic. Los fallos en los que la IA no llega a trabajar devuelven el análisis al cupo. |
+| Media | Peticiones lentas a propósito podían ocupar conexiones del servidor y de Caddy. | Tiempos máximos para cabeceras y cuerpo en Node y en Caddy; Caddy sin interfaz de administración, sin root y sin capacidades salvo abrir los puertos 80/443. |
+| Media | La app mandaba el código y las fotos a cualquier dirección configurada, también por HTTP sin cifrar. | Sin HTTPS solo se conecta a la red local; a internet, nunca en claro (`insecure_server`). |
+| Media | Antes del primer análisis no se pedía permiso para enviar la comida a una IA externa (lo exige Apple). | Pantalla de permiso que explica qué sale y a quién (servidor y Anthropic); se retira en Más → Servidor. |
+| Baja | Un `language` que no era texto (`?language[x]=…`) tumbaba la petición con un 500. | Solo se aceptan cadenas; prueba con entradas raras (`__proto__`, tipos cambiados, códigos de barras con `../`). |
+| Baja | Los textos de la IA y de las bases de datos llegaban sin tope a la app y a la base de datos. | Acotados en el servidor y otra vez en la app (textos cortos, cifras entre 0 y un máximo, como mucho 40 alimentos). |
+| Baja | La web enseñaba la lista de todas sus pantallas (`/_sitemap`) y una página de error en inglés. | Lista desactivada y página propia de «no encontrada». |
+| Baja | El importador de copias es una entrada no fiable. | Validación con Zod, nombres de tablas y columnas solo del esquema, valores siempre como parámetros, rutas de fotos descartadas y todo en una transacción. |
+
 Ya estaba bien hecho: la clave de Anthropic solo vive en el servidor; las respuestas se validan con Zod en los dos
 lados; los errores no enseñan detalles internos; las fotos se reducen y pierden los metadatos (ubicación incluida)
 antes de enviarse; los datos personales se quedan en el dispositivo.

@@ -66,6 +66,8 @@ const app = createApp({
   dailyLimitPerPerson: count("DAILY_LIMIT_PER_PERSON", 40),
   dailyLimitTotal: count("DAILY_LIMIT_TOTAL", 300),
   maxConcurrentAnalyses: Math.max(1, count("MAX_CONCURRENT_ANALYSES", 4)),
+  maxConcurrentPerPerson: Math.max(1, count("MAX_CONCURRENT_PER_PERSON", 2)),
+  maxAuthFailures: count("MAX_AUTH_FAILURES", 10),
   // En desarrollo la web de Expo (otro puerto) llama directamente; en producción va por el mismo dominio.
   corsOrigins: allowedOrigins.length > 0 ? allowedOrigins : production ? [] : "*",
   trustProxy: trustProxySetting(process.env.TRUST_PROXY),
@@ -78,6 +80,14 @@ const server = app.listen(port, host, () => {
   console.log(client ? `IA: ${model}${effort ? ` (esfuerzo ${effort})` : ""}` : "IA sin configurar: falta ANTHROPIC_API_KEY en .env");
   console.log(testers.length > 0 ? `Códigos de acceso: ${testers.map((tester) => tester.name).join(", ")}` : "Sin códigos de acceso: cualquiera que llegue al servidor puede usarlo (solo para desarrollo).");
 });
+
+// Tiempos de la conexión. Quien manda una petición a cuentagotas para ocupar el servidor se queda fuera:
+// 20 s para las cabeceras y 60 s para el cuerpo entero (una foto reducida sube en un par de segundos).
+// Las conexiones en reposo duran más que las que reutiliza el proxy (Caddy, 30 s), para que nunca
+// mande una petición por una conexión que el servidor acaba de cerrar.
+server.headersTimeout = 20_000;
+server.requestTimeout = 60_000;
+server.keepAliveTimeout = 65_000;
 
 // Docker detiene el contenedor con SIGTERM: se terminan las peticiones en curso antes de salir.
 for (const signal of ["SIGTERM", "SIGINT"]) {

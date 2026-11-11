@@ -5,6 +5,10 @@ import { t } from "@/i18n";
 import { space, useColors } from "@/theme";
 import { Button, Notice, Txt } from "./ui";
 
+/** Ancho máximo del contenido: en un ordenador o una tableta queda en una columna centrada, no estirado. */
+export const CONTENT_MAX_WIDTH = 720;
+const COLUMN = { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" } as const;
+
 /**
  * Contenedor de cada pantalla: desplazamiento, márgenes seguros y teclado. En las pestañas
  * (sin cabecera nativa) muestra un título grande; en el resto, el título lo pone la cabecera.
@@ -36,6 +40,7 @@ export function Screen({
         style={{ flex: 1 }}
         contentContainerStyle={[
           { paddingHorizontal: space.lg, paddingTop: tab ? insets.top + space.lg : space.lg, paddingBottom: footer ? space.xl : space.xxl + insets.bottom, gap: space.lg },
+          COLUMN,
           contentStyle,
         ]}
         keyboardShouldPersistTaps="handled"
@@ -61,7 +66,7 @@ export function Screen({
             paddingBottom: insets.bottom + space.md,
           }}
         >
-          {footer}
+          <View style={COLUMN}>{footer}</View>
         </View>
       ) : null}
     </KeyboardAvoidingView>

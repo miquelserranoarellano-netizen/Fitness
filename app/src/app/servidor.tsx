@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from "react-native";
 import { Field, Input } from "@/components/form";
 import { Screen } from "@/components/screen";
 import { Button, Card, CardHeader, Notice, Row, Txt } from "@/components/ui";
+import { useAiConsent } from "@/features/meals/consent";
 import { t } from "@/i18n";
 import { cleanAccessCode, getAccessCode, MAX_ACCESS_CODE_LENGTH, setAccessCode } from "@/lib/access-code";
 import { ApiError, apiErrorMessage, type AccessStatus, type ServerHealth } from "@/lib/api";
@@ -23,6 +24,7 @@ type Check =
  */
 export default function ServerSettings() {
   const colors = useColors();
+  const consent = useAiConsent();
   const [saved, setSaved] = useState(getAccessCode);
   const [code, setCode] = useState(() => getAccessCode() ?? "");
   const [check, setCheck] = useState<Check>({ status: "checking" });
@@ -135,9 +137,22 @@ export default function ServerSettings() {
         </View>
       </Card>
 
-      <Txt variant="tiny">
-        {t("Las fotos y textos de comida que analizas pasan por este servidor hasta la IA de Anthropic (Claude), que reconoce los alimentos. El servidor no los guarda. Tus entrenamientos, medidas y comidas registradas no salen de tu dispositivo.")}
-      </Txt>
+      <Card>
+        <CardHeader
+          title={t("Permiso para analizar con IA")}
+          description={t("Las fotos y textos de comida que analizas, con tus alergias, pasan por este servidor (que no los guarda) hasta Claude, la IA de Anthropic, que reconoce los alimentos.")}
+        />
+        <View style={{ gap: space.md }}>
+          <Row label={t("Estado")} value={consent.granted ? t("Aceptado") : t("Sin aceptar: se te preguntará antes del primer análisis")} />
+          {consent.granted ? (
+            <Button size="sm" variant="secondary" onPress={consent.revoke}>
+              {t("Retirar el permiso")}
+            </Button>
+          ) : null}
+        </View>
+      </Card>
+
+      <Txt variant="tiny">{t("Tus entrenamientos, medidas y comidas registradas no salen de tu dispositivo.")}</Txt>
     </Screen>
   );
 }

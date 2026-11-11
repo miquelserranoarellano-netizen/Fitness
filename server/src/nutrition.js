@@ -5,6 +5,7 @@
 const USDA_KEY = () => process.env.USDA_API_KEY || "DEMO_KEY";
 const TIMEOUT_MS = 6000;
 const CACHE_MAX = 2000;
+const MAX_RESPONSE_BYTES = 5_000_000;
 
 const cache = new Map(); // clave: "tipo|consulta" -> valor por 100 g o null
 
@@ -24,6 +25,8 @@ async function fetchJson(url, { allowNotFound = false } = {}) {
   });
   if (allowNotFound && res.status === 404) return null;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  // Estas respuestas pesan unos pocos KB: algo mucho mayor no es lo que se ha pedido.
+  if (Number(res.headers?.get?.("content-length")) > MAX_RESPONSE_BYTES) throw new Error("Respuesta demasiado grande");
   return res.json();
 }
 

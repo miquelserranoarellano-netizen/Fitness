@@ -3,6 +3,24 @@
 Última actualización: 10 de noviembre de 2026 · Preparada para el VPS (prueba web de un mes) · Fusión con SnapCal
 en curso (fase 5 de 10 hecha).
 
+## Fallos, aspecto y rendimiento (11/11/2026)
+
+- **Fallos encontrados con 7.500 perfiles al azar** (`src/domain/random.test.ts`): con poco material (solo banco,
+  solo barra de dominadas o solo poleas) la rutina tenía días sin ningún ejercicio; ahora no se guarda y el
+  cuestionario dice qué cambiar (`UnusablePlanError`). Con mucho peso la proteína se disparaba (más de 330 g) y los
+  macros sumaban más que el objetivo; por encima de un IMC de 30 se calculan sobre un peso de referencia.
+- **Seguridad:** segunda revisión en `../SEGURIDAD.md` (bloqueo tras códigos incorrectos, permiso antes de usar la
+  IA, solo HTTPS fuera de la red local, tiempos máximos, sin `/_sitemap`).
+- **Aspecto:** icono propio (mancuerna sobre verde, en lugar del de ejemplo de Expo), pantalla de carga en la web,
+  contenido en una columna centrada en pantallas anchas, barra inferior de la web sin etiquetas cortadas, página
+  de «no encontrada» en español y nombres en los campos para lectores de pantalla.
+- **Rendimiento:** los iconos de lucide se importan uno a uno (`babel/lucide-direct-imports.js`): la web pasa de
+  4,6 MB a 2,5 MB. Caddy sirve los archivos ya comprimidos con Brotli (`deploy/precompress.mjs`): 506 KB de
+  descarga en vez de 2,5 MB.
+- **Comprobado:** `npm run check` (139 pruebas), `expo export` para Android y web, servidor con 43 pruebas, y en el
+  navegador: cuestionario, sesión con 3 series y terminarla, comida a mano, permiso de la IA, exportar e importar
+  una copia, barra inferior en móvil y en ordenador.
+
 ## VPS, seguridad y versión web (10/11/2026)
 
 Para probar la app durante un mes desde el navegador antes del App Store. Guía en `../DESPLIEGUE.md`; revisión de

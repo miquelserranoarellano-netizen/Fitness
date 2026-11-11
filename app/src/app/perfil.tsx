@@ -1,7 +1,7 @@
 import { File, Paths } from "expo-file-system";
 import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
-import { ChevronDown, Download, Trash2 } from "lucide-react-native";
+import { ChevronDown, Download, Trash2, Upload } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { Field, Segmented, Toggle } from "@/components/form";
@@ -16,6 +16,7 @@ import { useMutation, useQuery } from "@/data/provider";
 import { addLimitation, deleteAllData, regeneratePlan, updateProfile, type ProfileSaveResult } from "@/data/services";
 import { SPLIT_LABEL } from "@/domain/training/plan";
 import { BODY_AREA_LABEL, LEVEL_LABEL, LIMITATION_KIND_LABEL, SEVERITY_LABEL, WEEKDAY_LABEL } from "@/domain/types";
+import { useImportCopy } from "@/features/backup/import-copy";
 import { draftFromProfile, profileFromDraft, validateStep, type Draft, type StepId } from "@/features/onboarding/draft";
 import {
   AvailabilitySection,
@@ -302,6 +303,7 @@ function Limitations({ limitations }: { limitations: Limitation[] }) {
 function DataCard() {
   const colors = useColors();
   const { run, pending } = useMutation();
+  const importer = useImportCopy();
   const [exporting, setExporting] = useState(false);
 
   const exportData = async () => {
@@ -354,11 +356,16 @@ function DataCard() {
     <Card>
       <CardHeader
         title={t("Tus datos")}
-        description={t("Descarga una copia de todo lo que la app guarda sobre ti (JSON). Sirve de copia de seguridad y para unir tus datos con la web u otra app más adelante.")}
+        description={t(
+          "Descarga una copia de todo lo que la app guarda sobre ti (JSON) para tenerla a salvo, o importa una que hayas descargado antes, aquí o en otro dispositivo: así pasas tus datos de la web al móvil. Las fotografías no van en la copia.",
+        )}
       />
       <View style={{ gap: space.md }}>
         <Button variant="secondary" icon={Download} onPress={exportData} loading={exporting}>
           {t("Exportar mis datos")}
+        </Button>
+        <Button variant="secondary" icon={Upload} onPress={importer.start} loading={importer.pending}>
+          {t("Importar una copia")}
         </Button>
         <View style={{ paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.line }}>
           <Button variant="danger" icon={Trash2} onPress={deleteEverything} loading={pending}>

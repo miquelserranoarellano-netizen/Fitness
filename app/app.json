@@ -8,12 +8,9 @@
     "scheme": "smartfitnesscoach",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#ffffff",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#08090a",
+        "backgroundColor": "#1d6b45",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -27,7 +24,12 @@
       "themeColor": "#1d6b45"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "sitemap": false
+        }
+      ],
       [
         "expo-splash-screen",
         {

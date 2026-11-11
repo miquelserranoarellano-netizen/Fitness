@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { ArrowLeft, ArrowRight, Lock, Sparkles } from "lucide-react-native";
+import { ArrowLeft, ArrowRight, Lock, Sparkles, Upload } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { Loading, Screen } from "@/components/screen";
@@ -8,10 +8,12 @@ import { clearState, getState, setState } from "@/data/profile";
 import { useData, useMutation, useQuery } from "@/data/provider";
 import { completeOnboarding } from "@/data/services";
 import { EQUIPMENT_LABEL, GOAL_LABEL, MEASURES, MUSCLE_LABEL } from "@/domain/types";
+import { useImportCopy } from "@/features/backup/import-copy";
 import { emptyDraft, onboardingFromDraft, validateStep, type Draft, type StepId } from "@/features/onboarding/draft";
 import { AvailabilitySection, ExperienceSection, GoalsSection, HabitsSection, MeasuresSection, NutritionSection, PersonalSection } from "@/features/profile/sections";
 import { msg, t, tn } from "@/i18n";
 import { lengthUnit, weightUnit } from "@/lib/units";
+import { isWeb } from "@/lib/web";
 import { radius, space, useColors } from "@/theme";
 
 type Step = { id: StepId | "intro" | "summary"; title: string; lead: string };
@@ -154,7 +156,7 @@ function Intro() {
       <View style={{ flexDirection: "row", gap: space.md, padding: space.lg, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface }}>
         <Lock size={20} color={colors.muted} />
         <View style={{ flex: 1, gap: 6 }}>
-          <Txt style={{ fontWeight: "600" }}>{t("Tus datos se quedan en este teléfono")}</Txt>
+          <Txt style={{ fontWeight: "600" }}>{isWeb ? t("Tus datos se quedan en este navegador") : t("Tus datos se quedan en este teléfono")}</Txt>
           <Txt variant="small">
             {t(
               "Vas a indicar datos de salud (peso y medidas). Se guardan solo en este dispositivo: no hay cuenta. Lo único que sale del teléfono son las comidas que decidas analizar (su foto o su texto, con las alergias que hayas indicado), que van a tu servidor para reconocer los alimentos. Puedes exportar o borrar tus datos desde Perfil cuando quieras. Al continuar aceptas guardarlos aquí con ese fin.",
@@ -163,6 +165,21 @@ function Intro() {
           <Txt variant="small">{t("Esta aplicación no hace diagnósticos médicos. Si tienes dolor o una lesión, consulta a un profesional sanitario.")}</Txt>
         </View>
       </View>
+      <ImportExisting />
+    </View>
+  );
+}
+
+/** Para quien ya usaba la app en la web o en otro teléfono: trae su copia en vez de rellenar el cuestionario. */
+function ImportExisting() {
+  const { db } = useData();
+  const importer = useImportCopy(() => clearState(db, DRAFT_KEY).catch(() => undefined));
+  return (
+    <View style={{ gap: space.sm, alignItems: "flex-start" }}>
+      <Txt variant="small">{t("¿Ya usabas la app en la web o en otro teléfono? Importa la copia que exportaste y sigue donde lo dejaste.")}</Txt>
+      <Button variant="ghost" size="sm" icon={Upload} onPress={importer.start} loading={importer.pending}>
+        {t("Importar una copia")}
+      </Button>
     </View>
   );
 }

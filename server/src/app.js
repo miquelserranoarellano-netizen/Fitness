@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { bearerToken, createDailyQuota, findTester } from "./access.js";
+import { bearerToken, createDailyQuota, createFailureTracker, findTester } from "./access.js";
 import {
   AnalysisError,
   LANGS,
@@ -72,8 +72,11 @@ export function createApp({
   /** Análisis con IA al día por persona y en total (0 = sin límite). */
   dailyLimitPerPerson = 40,
   dailyLimitTotal = 300,
-  /** Análisis con IA a la vez; el resto recibe `ai_busy`. */
+  /** Análisis con IA a la vez, en total y por persona; el resto recibe `ai_busy`. */
   maxConcurrentAnalyses = 4,
+  maxConcurrentPerPerson = 2,
+  /** Códigos incorrectos desde una misma dirección antes de bloquearla 10 minutos (0 = sin bloqueo). */
+  maxAuthFailures = 10,
   /** Orígenes web que pueden llamar desde otro dominio: "*" (desarrollo), una lista o ninguno. */
   corsOrigins = "*",
   /** Proxies delante (Caddy): sin esto, todos los usuarios compartirían el límite de peticiones. */
@@ -103,14 +106,22 @@ export function createApp({
     legacyHeaders: false,
     handler: (_req, res) => fail(res, 429, "rate_limited", "Demasiadas peticiones. Espera un minuto."),
   });
+  // Quien prueba códigos al azar se queda sin intentos: una dirección bloqueada ni siquiera se comprueba.
+  const failures = createFailureTracker({ limit: maxAuthFailures, now: () => now().getTime() });
   const authenticate = (req, res, next) => {
     if (testers.length === 0) {
       req.tester = "local";
       return next();
     }
+    const address = req.ip ?? "?";
+    if (failures.blocked(address)) {
+      res.set("Retry-After", "600");
+      return fail(res, 429, "auth_blocked", "Demasiados códigos incorrectos desde tu conexión. Espera 10 minutos.");
+    }
     const name = findTester(testers, bearerToken(req.get("authorization")));
     if (!name) {
-      logger.warn(`[acceso] código incorrecto o ausente en ${req.path} desde ${req.ip}`);
+      failures.fail(address);
+      logger.warn(`[acceso] código incorrecto o ausente en ${req.path} desde ${address}`);
       return fail(res, 401, "unauthorized", "Código de acceso incorrecto o retirado.");
     }
     req.tester = name;
@@ -124,6 +135,9 @@ export function createApp({
 
   const quota = createDailyQuota({ perPerson: dailyLimitPerPerson, total: dailyLimitTotal, now });
   let running = 0;
+  const runningBy = new Map(); // persona -> análisis en marcha
+  /** Fallos en los que Anthropic no ha llegado a trabajar (ni a cobrar): se devuelve el análisis al cupo. */
+  const UNBILLED = new Set(["ai_busy", "ai_unavailable", "ai_auth_failed", "ai_bad_request"]);
 
   // Registro de uso: quién, qué ruta, cómo acabó y cuánto tardó. Nunca el contenido.
   const logUsage = (req, res, next) => {
@@ -139,6 +153,11 @@ export function createApp({
 
   const analyze = (source) => async (req, res, next) => {
     let started = false;
+    // Si quien pide el análisis se va (cancela o pierde la conexión), se corta también la petición a la IA.
+    const gone = new AbortController();
+    res.on("close", () => {
+      if (!res.writableFinished) gone.abort();
+    });
     try {
       const parsed = (source === "image" ? imageBody : textBody).safeParse(req.body ?? {});
       if (!parsed.success) {
@@ -151,6 +170,9 @@ export function createApp({
         if (!mediaType) return fail(res, 400, "bad_request", "La imagen no es JPEG, PNG ni WebP.");
       }
       if (!client) throw new AnalysisError("ai_not_configured", 503, "El servidor no tiene configurada la clave de Anthropic.");
+      if ((runningBy.get(req.tester) ?? 0) >= maxConcurrentPerPerson) {
+        return fail(res, 429, "ai_busy", "Ya tienes análisis en marcha. Espera a que terminen.");
+      }
       if (running >= maxConcurrentAnalyses) return fail(res, 429, "ai_busy", "Hay demasiados análisis a la vez. Prueba en un momento.");
       const over = quota.take(req.tester);
       if (over) {
@@ -159,6 +181,7 @@ export function createApp({
       }
 
       running += 1;
+      runningBy.set(req.tester, (runningBy.get(req.tester) ?? 0) + 1);
       started = true;
       const language = pickLanguage(body.language);
       const avoid = cleanAvoidList(body.avoid);
@@ -172,12 +195,21 @@ export function createApp({
         imageBase64: body.imageBase64,
         mediaType,
         text: body.text,
+        signal: gone.signal,
       });
       res.json(await buildResult(analysis, language, avoid, lookupFood));
     } catch (error) {
+      if (started && error instanceof AnalysisError && UNBILLED.has(error.code)) quota.refund(req.tester);
+      // Ya no hay nadie esperando la respuesta: no hay nada que contestar.
+      if (gone.signal.aborted) return;
       next(error);
     } finally {
-      if (started) running -= 1;
+      if (started) {
+        running -= 1;
+        const mine = (runningBy.get(req.tester) ?? 1) - 1;
+        if (mine > 0) runningBy.set(req.tester, mine);
+        else runningBy.delete(req.tester);
+      }
     }
   };
 

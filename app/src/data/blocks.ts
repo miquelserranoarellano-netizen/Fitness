@@ -105,7 +105,13 @@ export async function createBlock(
   return blockId;
 }
 
-/** Genera y guarda un bloque nuevo a partir del perfil actual. */
+/**
+ * La rutina generada tiene días sin ningún ejercicio (con solo un banco, o solo una barra de dominadas, o
+ * con lesiones que descartan todo lo que permite el material): no se guarda. El mensaje dice qué cambiar.
+ */
+export class UnusablePlanError extends Error {}
+
+/** Genera y guarda un bloque nuevo a partir del perfil actual. Lanza `UnusablePlanError` si no es entrenable. */
 export async function createBlockFromProfile(
   tx: Queryable,
   profile: Profile,
@@ -113,6 +119,17 @@ export async function createBlockFromProfile(
   meta: { levelReasons: string[]; startedOn: string; carry?: BlockCarryOver },
 ): Promise<{ blockId: string; plan: GeneratedPlan }> {
   const plan = generatePlan(planInputFromProfile(profile, limitations, meta.carry));
+  const empty = plan.days.filter((day) => day.exercises.length === 0);
+  if (empty.length > 0) {
+    const which = empty.length === 1 ? `el día «${empty[0]?.name}» se queda` : `${empty.length} de los ${plan.days.length} días se quedan`;
+    const fixes = ["marca más material (mancuernas, barra o máquinas)"];
+    if (limitations.length > 0) fixes.push("revisa tus lesiones y limitaciones");
+    if (profile.dislikedExercises.length > 0) fixes.push("quita ejercicios de los que prefieres evitar");
+    const last = fixes.pop();
+    throw new UnusablePlanError(
+      `No sale una rutina completa con lo que has indicado: ${which} sin ningún ejercicio. Para arreglarlo, ${fixes.length > 0 ? `${fixes.join(", ")} o ${last}` : last}.`,
+    );
+  }
   const blockId = await createBlock(tx, plan, {
     level: profile.level,
     levelReasons: meta.levelReasons,

@@ -7,6 +7,7 @@ import { View } from "react-native";
 import { Screen } from "@/components/screen";
 import { Button, Card, CardHeader, Notice, Txt } from "@/components/ui";
 import { RequestError, WorkingPanel, useManualMeal } from "@/features/meals/components";
+import { AiConsentCard, useAiConsent } from "@/features/meals/consent";
 import { draftFromAnalysis, setMealDraft, type PickedPhoto } from "@/features/meals/draft";
 import { useAvoidList, useServerRequest } from "@/features/meals/hooks";
 import { t } from "@/i18n";
@@ -26,6 +27,7 @@ export default function PhotoMeal() {
   const manual = useManualMeal();
   const avoid = useAvoidList();
   const request = useServerRequest();
+  const consent = useAiConsent();
   const params = useLocalSearchParams<{ abrir?: string }>();
   const [photo, setPhoto] = useState<PickedPhoto | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -62,18 +64,27 @@ export default function PhotoMeal() {
     await analyze(picked);
   };
 
-  // El botón grande de foto abre la cámara directamente (una sola vez).
+  // El botón grande de foto abre la cámara directamente (una sola vez), ya con el permiso de la IA dado.
   const openCamera = useEffectEvent(() => {
     void pick("camera");
   });
   useEffect(() => {
-    if (params.abrir === "camara" && !opened.current) {
+    if (params.abrir === "camara" && consent.granted && !opened.current) {
       opened.current = true;
       openCamera();
     }
-  }, [params.abrir]);
+  }, [params.abrir, consent.granted]);
 
   const loading = request.state.status === "loading";
+
+  // Sin el permiso no se hace ni se envía ninguna foto.
+  if (!consent.granted) {
+    return (
+      <Screen>
+        <AiConsentCard onAccept={consent.grant} onManual={manual} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -126,7 +137,7 @@ export default function PhotoMeal() {
 
       <Txt variant="tiny">
         {t(
-          "La foto se envía reducida y sin ubicación a tu servidor, que la pasa a la IA para reconocer los alimentos. En el teléfono se guarda una copia reducida con la comida y se borra al borrarla.",
+          "La foto se envía reducida y sin ubicación al servidor de la app, que la pasa a Claude (la IA de Anthropic) para reconocer los alimentos. En el teléfono se guarda una copia reducida con la comida y se borra al borrarla.",
         )}
       </Txt>
     </Screen>

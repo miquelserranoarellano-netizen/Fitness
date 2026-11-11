@@ -17,7 +17,7 @@ import {
 } from "@/features/profile/schema";
 import { addDays, daysBetween, formatDate, isIsoDate, today as todayDate, weekStart as weekStartOf } from "@/lib/dates";
 import { formatLength, formatWeight } from "@/lib/units";
-import { createBlockFromProfile, getActiveBlock, saveBlockEvaluation, type BlockEvaluation } from "./blocks";
+import { createBlockFromProfile, getActiveBlock, saveBlockEvaluation, UnusablePlanError, type BlockEvaluation } from "./blocks";
 import { hasAnyMeasurement, listWeights, upsertMeasurements, upsertWeight } from "./body";
 import { getInsights } from "./insights";
 import { createTargetFromProfile, insertNutritionTarget } from "./nutrition";
@@ -51,6 +51,15 @@ export type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: 
 const ok = <T>(data: T): Result<T> => ({ ok: true, data });
 const fail = (error: string): Result<never> => ({ ok: false, error });
 
+/**
+ * Para las transacciones que crean una rutina: si no se ha guardado porque tenía días sin ejercicios
+ * (`UnusablePlanError`), devuelve el motivo como resultado; cualquier otro error sigue su camino.
+ */
+function planFailure(error: unknown): Result<never> {
+  if (error instanceof UnusablePlanError) return fail(error.message);
+  throw error;
+}
+
 /* ───────────────────────────── Cuestionario inicial ───────────────────────────── */
 
 /**
@@ -75,22 +84,26 @@ export async function completeOnboarding(db: Db, data: unknown): Promise<Result>
   });
   const date = todayDate();
 
-  await db.transaction(async (tx) => {
-    const done = await tx.get<{ n: number }>("select count(*) as n from profiles where onboarding_completed_at is not null");
-    if ((done?.n ?? 0) > 0) throw new Error("El cuestionario inicial ya estaba completado.");
+  try {
+    await db.transaction(async (tx) => {
+      const done = await tx.get<{ n: number }>("select count(*) as n from profiles where onboarding_completed_at is not null");
+      if ((done?.n ?? 0) > 0) throw new Error("El cuestionario inicial ya estaba completado.");
 
-    await upsertProfile(tx, input, level);
-    await tx.run("delete from limitations");
-    for (const limitation of input.limitations) await insertLimitation(tx, limitation);
-    await upsertWeight(tx, date, input.weightKg);
-    if (hasAnyMeasurement(input.measurements)) await upsertMeasurements(tx, date, input.measurements);
+      await upsertProfile(tx, input, level);
+      await tx.run("delete from limitations");
+      for (const limitation of input.limitations) await insertLimitation(tx, limitation);
+      await upsertWeight(tx, date, input.weightKg);
+      if (hasAnyMeasurement(input.measurements)) await upsertMeasurements(tx, date, input.measurements);
 
-    const profile = await requireProfile(tx);
-    const limitations = await getLimitations(tx);
-    await createBlockFromProfile(tx, profile, limitations, { levelReasons: reasons, startedOn: date });
-    await createTargetFromProfile(tx, profile, input.weightKg, "initial", date);
-    await markOnboarded(tx);
-  });
+      const profile = await requireProfile(tx);
+      const limitations = await getLimitations(tx);
+      await createBlockFromProfile(tx, profile, limitations, { levelReasons: reasons, startedOn: date });
+      await createTargetFromProfile(tx, profile, input.weightKg, "initial", date);
+      await markOnboarded(tx);
+    });
+  } catch (error) {
+    return planFailure(error);
+  }
   return ok(undefined);
 }
 
@@ -171,25 +184,29 @@ export async function regeneratePlan(db: Db): Promise<Result> {
     sex: profile.sex,
   });
 
-  await db.transaction(async (tx) => {
-    await createBlockFromProfile(tx, profile, limitations, {
-      levelReasons: level.reasons,
-      startedOn: todayDate(),
-      carry: {
-        volumeAdjust: block?.rationale.volumeAdjust,
-        avoidExercises: block?.rationale.avoidExercises,
-        changes: block
-          ? [
-              {
-                title: "Rutina regenerada tras cambiar el perfil",
-                detail:
-                  "Has modificado datos que afectan al plan (días, tiempo, material, prioridades, limitaciones o preferencias) y has pedido una rutina nueva. Tu historial de cargas se conserva: los ejercicios que repitan seguirán partiendo de lo último que registraste.",
-              },
-            ]
-          : undefined,
-      },
+  try {
+    await db.transaction(async (tx) => {
+      await createBlockFromProfile(tx, profile, limitations, {
+        levelReasons: level.reasons,
+        startedOn: todayDate(),
+        carry: {
+          volumeAdjust: block?.rationale.volumeAdjust,
+          avoidExercises: block?.rationale.avoidExercises,
+          changes: block
+            ? [
+                {
+                  title: "Rutina regenerada tras cambiar el perfil",
+                  detail:
+                    "Has modificado datos que afectan al plan (días, tiempo, material, prioridades, limitaciones o preferencias) y has pedido una rutina nueva. Tu historial de cargas se conserva: los ejercicios que repitan seguirán partiendo de lo último que registraste.",
+                },
+              ]
+            : undefined,
+        },
+      });
     });
-  });
+  } catch (error) {
+    return planFailure(error);
+  }
   return ok(undefined);
 }
 
@@ -455,19 +472,23 @@ export async function startNextBlock(db: Db): Promise<Result> {
     sex: profile.sex,
   });
 
-  await db.transaction(async (tx) => {
-    await saveBlockEvaluation(tx, block.id, evaluation);
-    await createBlockFromProfile(tx, profile, limitations, {
-      levelReasons: level.reasons,
-      startedOn: today,
-      carry: {
-        changes: decision.changes,
-        volumeAdjust: decision.volumeAdjust,
-        avoidExercises: [...new Set([...(block.rationale.avoidExercises ?? []), ...decision.avoidExercises])],
-        deload: decision.deload,
-      },
+  try {
+    await db.transaction(async (tx) => {
+      await saveBlockEvaluation(tx, block.id, evaluation);
+      await createBlockFromProfile(tx, profile, limitations, {
+        levelReasons: level.reasons,
+        startedOn: today,
+        carry: {
+          changes: decision.changes,
+          volumeAdjust: decision.volumeAdjust,
+          avoidExercises: [...new Set([...(block.rationale.avoidExercises ?? []), ...decision.avoidExercises])],
+          deload: decision.deload,
+        },
+      });
     });
-  });
+  } catch (error) {
+    return planFailure(error);
+  }
   return ok(undefined);
 }
 

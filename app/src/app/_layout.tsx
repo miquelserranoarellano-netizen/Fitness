@@ -70,6 +70,7 @@ function AppShell() {
           <Stack.Screen name="revisiones/mes/[id]" options={{ title: t("Informe mensual") }} />
           <Stack.Screen name="perfil" options={{ title: t("Perfil") }} />
           <Stack.Screen name="servidor" options={{ title: t("Servidor y código de acceso") }} />
+          <Stack.Screen name="+not-found" options={{ title: t("Página no encontrada") }} />
           <Stack.Screen name="comida/foto" options={{ title: t("Foto de la comida") }} />
           <Stack.Screen name="comida/texto" options={{ title: t("Escribir la comida") }} />
           <Stack.Screen name="comida/codigo" options={{ title: t("Código de barras") }} />

@@ -21,8 +21,8 @@ const silent = { warn() {}, error() {}, log() {} };
 const servers = [];
 after(() => Promise.all(servers.map((server) => new Promise((resolve) => server.close(resolve)))));
 
-/** Arranca la app en un puerto libre y devuelve una función para hacerle peticiones. */
-async function start(options = {}) {
+/** Arranca la app en un puerto libre y devuelve su dirección. */
+async function startRaw(options = {}) {
   const app = createApp({
     lookupFood: async () => null,
     lookupBarcode: async () => null,
@@ -33,7 +33,12 @@ async function start(options = {}) {
     const listening = app.listen(0, "127.0.0.1", () => resolve(listening));
   });
   servers.push(server);
-  const base = `http://127.0.0.1:${server.address().port}`;
+  return `http://127.0.0.1:${server.address().port}`;
+}
+
+/** Arranca la app en un puerto libre y devuelve una función para hacerle peticiones. */
+async function start(options = {}) {
+  const base = await startRaw(options);
   return async (path, { method = "GET", body, headers = {} } = {}) => {
     const response = await fetch(base + path, {
       method,
@@ -316,6 +321,154 @@ describe("cupo diario y análisis a la vez", () => {
     release();
     assert.equal((await first).status, 200);
     assert.equal((await request("/analyze-text", { method: "POST", body: { text: "alubias" } })).status, 200);
+  });
+});
+
+describe("abusos", () => {
+  test("tras varios códigos incorrectos la dirección queda bloqueada 10 minutos, también con el bueno", async () => {
+    const { testers } = parseAccessCodes(`miquel:${MIQUEL}`);
+    let clock = new Date("2026-11-10T10:00:00Z");
+    const request = await start({ testers, maxAuthFailures: 3, rateLimitPerMinute: 100, now: () => clock });
+    for (let i = 0; i < 3; i++) assert.equal((await request("/me", { headers: bearer(`codigo-inventado-numero-${i}`) })).status, 401);
+    const blocked = await request("/me", { headers: bearer(MIQUEL) });
+    assert.deepEqual([blocked.status, blocked.body.code, blocked.headers.get("retry-after")], [429, "auth_blocked", "600"]);
+    clock = new Date("2026-11-10T10:10:01Z");
+    assert.equal((await request("/me", { headers: bearer(MIQUEL) })).status, 200);
+    // Los aciertos no cuentan como intentos.
+    for (let i = 0; i < 10; i++) assert.equal((await request("/me", { headers: bearer(MIQUEL) })).status, 200);
+  });
+
+  test("una persona no puede ocupar todos los análisis a la vez", async () => {
+    const { testers } = parseAccessCodes(`miquel:${MIQUEL},marc:${MARC}`);
+    let release;
+    const gate = new Promise((resolve) => (release = resolve));
+    const client = fakeClient(async () => {
+      await gate;
+      return message(analysis);
+    });
+    const request = await start({ client, testers, maxConcurrentAnalyses: 4, maxConcurrentPerPerson: 1 });
+    const ask = (code) => request("/analyze-text", { method: "POST", body: { text: "lentejas" }, headers: bearer(code) });
+    const first = ask(MIQUEL);
+    while (client.requests.length === 0) await new Promise((resolve) => setTimeout(resolve, 5));
+    const second = await ask(MIQUEL);
+    assert.deepEqual([second.status, second.body.code], [429, "ai_busy"]);
+    const other = ask(MARC); // otra persona sí entra
+    while (client.requests.length === 1) await new Promise((resolve) => setTimeout(resolve, 5));
+    release();
+    assert.deepEqual([(await first).status, (await other).status], [200, 200]);
+    assert.equal((await ask(MIQUEL)).status, 200);
+  });
+
+  test("si la IA no llega a trabajar, el análisis vuelve al cupo", async () => {
+    const { testers } = parseAccessCodes(`miquel:${MIQUEL}`);
+    let down = true;
+    const client = fakeClient(() => {
+      if (down) throw new Anthropic.InternalServerError(529, undefined, "overloaded", new Headers());
+      return message(analysis);
+    });
+    const request = await start({ client, testers, dailyLimitPerPerson: 1 });
+    const ask = () => request("/analyze-text", { method: "POST", body: { text: "lentejas" }, headers: bearer(MIQUEL) });
+    assert.equal((await ask()).body.code, "ai_unavailable");
+    assert.equal((await request("/me", { headers: bearer(MIQUEL) })).body.used, 0);
+    down = false;
+    assert.equal((await ask()).status, 200);
+    assert.equal((await ask()).body.code, "quota_exceeded");
+  });
+
+  test("si quien lo pide se va, se corta la petición a la IA", async () => {
+    let signal;
+    const aborted = new Promise((resolve) => {
+      const client = {
+        beta: {
+          messages: {
+            create: (_params, options) =>
+              new Promise((_resolveCall, reject) => {
+                signal = options.signal;
+                signal.addEventListener("abort", () => {
+                  resolve(true);
+                  reject(new Anthropic.APIUserAbortError());
+                });
+              }),
+          },
+        },
+      };
+      void startRaw({ client }).then(async (base) => {
+        const controller = new AbortController();
+        const pending = fetch(`${base}/analyze-text`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ text: "lentejas" }),
+          signal: controller.signal,
+        }).catch(() => undefined);
+        while (!signal) await new Promise((wait) => setTimeout(wait, 5));
+        controller.abort();
+        await pending;
+      });
+    });
+    assert.equal(await aborted, true);
+    assert.equal(signal.aborted, true);
+  });
+
+  test("los textos que escribe la IA llegan acotados", async () => {
+    const long = { ...analysis, notes: "n".repeat(5000), items: [{ ...analysis.items[0], name: "x".repeat(500), search_query_en: `bread   ${"y".repeat(500)}` }] };
+    const queries = [];
+    const lookupFood = async (item) => {
+      queries.push(item.search_query_en);
+      return { source: "usda", matchedName: "m".repeat(900), kcal100: 300, protein100: 10, carbs100: 55, fat100: 4 };
+    };
+    const request = await start({ client: fakeClient(message(long)), lookupFood });
+    const { body } = await request("/analyze-text", { method: "POST", body: { text: "pan" } });
+    assert.equal(body.notes.length, 400);
+    assert.equal(body.items[0].name.length, 80);
+    assert.equal(body.items[0].matched_name.length, 120);
+    assert.equal(queries[0].length, 80);
+    assert.ok(queries[0].startsWith("bread y"));
+  });
+
+  test("entradas raras no tumban el servidor ni llegan a la IA", async () => {
+    const client = fakeClient(message(analysis));
+    const request = await start({ client, rateLimitPerMinute: 1000 });
+    const weird = [
+      ["/analyze-text", "POST", "null"],
+      ["/analyze-text", "POST", "[]"],
+      ["/analyze-text", "POST", '"texto"'],
+      ["/analyze-text", "POST", { text: 12345 }],
+      ["/analyze-text", "POST", { text: { $gt: "" } }],
+      ["/analyze-text", "POST", { text: ["a", "b"] }],
+      ["/analyze-text", "POST", '{"text":"lentejas"'],
+      ["/analyze", "POST", { imageBase64: 42 }],
+      ["/analyze", "POST", { imageBase64: ["a"] }],
+      ["/analyze", "POST", { imageBase64: "data:image/png;base64," }],
+      ["/analyze", "POST", { imageBase64: `${"A".repeat(200)}===` }],
+      ["/barcode/123", "GET"],
+      ["/barcode/12345678901234567890", "GET"],
+      ["/barcode/1234567a", "GET"],
+      ["/barcode/%00%00%00%00%00%00%00%00", "GET"],
+      ["/barcode/..%2f..%2fetc%2fpasswd", "GET"],
+    ];
+    for (const [path, method, body] of weird) {
+      const response = await request(path, { method, body });
+      assert.ok([400, 404].includes(response.status), `${method} ${path} ${JSON.stringify(body)} -> ${response.status}`);
+      assert.equal(typeof response.body.code, "string");
+    }
+    // Campos de más o peligrosos se ignoran: el análisis sale igual.
+    const extra = await request("/analyze-text", {
+      method: "POST",
+      body: '{"text":"lentejas","__proto__":{"admin":true},"constructor":{"prototype":{"x":1}},"language":{"toString":"x"},"avoid":{"length":5}}',
+    });
+    assert.equal(extra.status, 200);
+    assert.equal({}.admin, undefined);
+    assert.equal(client.requests.length, 1);
+    assert.match(client.requests[0].params.system, /español/);
+    // Un objeto como idioma (también por la URL) no rompe nada: se usa el español.
+    const odd = await (await start({ lookupBarcode: async () => ({ name: "Galletas", brand: null, servingGrams: null, per100: { kcal100: 450, protein100: 6, carbs100: 70, fat100: 16 } }) }))(
+      "/barcode/8410000000017?language[toString]=x&language[valueOf]=y",
+    );
+    assert.equal(odd.status, 200);
+    // Métodos que no existen en una ruta.
+    for (const [path, method] of [["/analyze", "GET"], ["/me", "DELETE"], ["/health", "POST"], ["/barcode/12345678", "PUT"]]) {
+      assert.equal((await request(path, { method })).status, 404, `${method} ${path}`);
+    }
   });
 });
 

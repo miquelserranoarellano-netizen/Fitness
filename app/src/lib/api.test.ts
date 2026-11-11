@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ApiError, apiErrorMessage, createApiClient, isRetryable, mealWarnings, resolveApiUrl, type ApiErrorCode } from "./api";
+import { ApiError, apiErrorMessage, createApiClient, isRetryable, isTransportSafe, mealWarnings, resolveApiUrl, type ApiErrorCode } from "./api";
 
 type Call = { url: string; init: RequestInit };
 
@@ -227,9 +227,9 @@ describe("errores", () => {
 
   test("todos los códigos tienen mensaje", () => {
     const codes: ApiErrorCode[] = [
-      "no_server", "network", "timeout", "cancelled", "bad_response", "prepare", "http",
+      "no_server", "insecure_server", "network", "timeout", "cancelled", "bad_response", "prepare", "http",
       "ai_not_configured", "ai_auth_failed", "ai_busy", "ai_bad_request", "ai_unavailable", "ai_timeout",
-      "ai_refused", "ai_invalid_response", "rate_limited", "quota_exceeded", "unauthorized", "bad_request", "too_large",
+      "ai_refused", "ai_invalid_response", "rate_limited", "quota_exceeded", "unauthorized", "auth_blocked", "bad_request", "too_large",
       "not_found", "lookup_unavailable", "server_error",
     ];
     for (const code of codes) {
@@ -238,6 +238,75 @@ describe("errores", () => {
       expect(text, code).not.toMatch(/\{\w+\}/);
     }
     expect(apiErrorMessage(new Error("otra cosa"))).toBe("otra cosa");
+  });
+});
+
+describe("seguridad del cliente", () => {
+  test("sin cifrar solo se habla con el propio equipo o la red local", () => {
+    for (const url of ["https://fitness.ejemplo.com/api", "HTTPS://A.B", "http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.1.20:3000", "http://10.0.0.5", "http://172.16.4.4:3000", "http://172.31.255.1", "http://mi-pc.local:3000", "http://[::1]:3000", "http://app.localhost"]) {
+      expect(isTransportSafe(url), url).toBe(true);
+    }
+    for (const url of ["http://fitness.ejemplo.com/api", "http://85.214.10.20:3000", "http://172.32.0.1", "http://172.15.0.1", "http://10.evil.com", "http://192.168.1.20.evil.com", "http://localhost.evil.com", "ftp://localhost", "//fitness.ejemplo.com", "/api", ""]) {
+      expect(isTransportSafe(url), url).toBe(false);
+    }
+  });
+
+  test("a un servidor de internet sin HTTPS no se le manda nada (ni el código ni la foto)", async () => {
+    const { calls, fetch } = fakeFetch(() => json(serverResult));
+    const api = createApiClient({ baseUrl: "http://fitness.ejemplo.com/api", accessCode: () => "codigo-de-miquel", fetch });
+    const error = await failure(api.analyzePhoto({ base64: "QUJD", mediaType: "image/jpeg" }));
+    expect(error.code).toBe("insecure_server");
+    expect(isRetryable(error)).toBe(false);
+    expect(apiErrorMessage(error)).toContain("HTTPS");
+    expect((await failure(api.me())).code).toBe("insecure_server");
+    expect(calls).toHaveLength(0);
+  });
+
+  test("una respuesta manipulada llega acotada: textos cortos y cifras entre 0 y un máximo", async () => {
+    const hostile = {
+      is_food: true,
+      dish_name: "D".repeat(5000),
+      items: [
+        {
+          name: "N".repeat(5000),
+          grams: -50,
+          calories: 1e12,
+          protein_g: -1,
+          carbs_g: 99999,
+          fat_g: 5,
+          sodium_mg: 1e9,
+          confidence: 7,
+          source: "ai",
+          matched_name: "M".repeat(5000),
+          may_contain: ["g".repeat(500)],
+        },
+      ],
+      total_calories_min: -10,
+      total_calories_max: 1e15,
+      notes: "x".repeat(50_000),
+      per_100g: { calories: 99999, protein_g: 500, carbs_g: -3, fat_g: 10, fiber_g: null, sugar_g: 1000, sodium_mg: null },
+      serving_grams: 1e9,
+    };
+    const { fetch } = fakeFetch(() => json(hostile));
+    const result = await createApiClient({ baseUrl: "https://a.b", fetch }).analyzeText("x");
+    expect(result.dishName).toHaveLength(160);
+    expect(result.notes).toHaveLength(1000);
+    expect(result.caloriesMin).toBe(0);
+    expect(result.caloriesMax).toBe(200_000);
+    expect(result.servingGrams).toBe(10_000);
+    expect(result.per100g).toMatchObject({ calories: 1000, proteinG: 100, carbsG: 0, sugarG: 100 });
+    expect(result.items[0]).toMatchObject({ grams: 0, calories: 20_000, proteinG: 0, carbsG: 4000, sodiumMg: 200_000, confidence: 1 });
+    expect(result.items[0].name).toHaveLength(120);
+    expect(result.items[0].matchedName).toHaveLength(160);
+    expect(result.items[0].mayContain[0]).toHaveLength(60);
+
+    // Demasiados alimentos, un origen desconocido o un texto donde va un número: no se acepta.
+    const many = fakeFetch(() => json({ ...serverResult, items: Array.from({ length: 41 }, () => serverResult.items[0]) }));
+    expect((await failure(createApiClient({ baseUrl: "https://a.b", fetch: many.fetch }).analyzeText("x"))).code).toBe("bad_response");
+    const source = fakeFetch(() => json({ ...serverResult, items: [{ ...serverResult.items[0], source: "<script>" }] }));
+    expect((await failure(createApiClient({ baseUrl: "https://a.b", fetch: source.fetch }).analyzeText("x"))).code).toBe("bad_response");
+    const typed = fakeFetch(() => json({ ...serverResult, items: [{ ...serverResult.items[0], calories: "muchas" }] }));
+    expect((await failure(createApiClient({ baseUrl: "https://a.b", fetch: typed.fetch }).analyzeText("x"))).code).toBe("bad_response");
   });
 });
 

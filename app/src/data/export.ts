@@ -3,14 +3,17 @@ import type { Queryable } from "@/db/types";
 /**
  * Exportación de todos los datos en un único documento JSON, tabla a tabla con los mismos nombres de
  * columna que la base de datos (las de la web, sin `user_id`, más las de nutrición de la fusión con
- * SnapCal). Sirve de copia de seguridad y para importarlos después. Las fotografías se incluyen solo
- * como metadatos (rutas), no las imágenes.
+ * SnapCal). Sirve de copia de seguridad y para importarlos después (`import.ts`). Las fotografías se
+ * incluyen solo como metadatos (rutas), no las imágenes.
  *
  * Formato 2 (`appcombinada/exportacion@2`): el 1 era el de la app de partida, sin las tablas de
  * alimentos, favoritas, agua y pasos.
  */
 
-const TABLES: { name: string; order: string }[] = [
+export const EXPORT_FORMAT = "appcombinada/exportacion@2";
+
+/** Tablas exportadas, padres antes que hijas (el orden en que se vuelven a insertar al importar). */
+export const TABLES: { name: string; order: string }[] = [
   { name: "profiles", order: "id" },
   { name: "limitations", order: "created_at" },
   { name: "body_weights", order: "measured_on" },
@@ -34,7 +37,7 @@ const TABLES: { name: string; order: string }[] = [
 ];
 
 /** Columnas que guardan JSON como texto: en la exportación se devuelven ya como objetos. */
-const JSON_COLUMNS = new Set([
+export const JSON_COLUMNS: ReadonlySet<string> = new Set([
   "secondary_goals",
   "priority_muscles",
   "favorite_exercises",
@@ -54,7 +57,7 @@ const JSON_COLUMNS = new Set([
 
 export async function exportAllData(db: Queryable): Promise<Record<string, unknown>> {
   const out: Record<string, unknown> = {
-    formato: "appcombinada/exportacion@2",
+    formato: EXPORT_FORMAT,
     exportado_el: new Date().toISOString(),
     unidades: "Pesos en kilogramos, longitudes en centímetros, agua en mililitros y sodio en miligramos.",
     nota: "Mismas tablas y columnas que la base de datos de la app, sin user_id (los datos son de un único usuario).",

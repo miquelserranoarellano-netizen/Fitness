@@ -28,6 +28,8 @@ services:
       DAILY_LIMIT_TOTAL: ${DAILY_LIMIT_TOTAL:-300}
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-20}
       MAX_CONCURRENT_ANALYSES: ${MAX_CONCURRENT_ANALYSES:-4}
+      MAX_CONCURRENT_PER_PERSON: ${MAX_CONCURRENT_PER_PERSON:-2}
+      MAX_AUTH_FAILURES: ${MAX_AUTH_FAILURES:-10}
     expose:
       - "3000"
     read_only: true
@@ -61,7 +63,15 @@ services:
       # Certificados de HTTPS: se conservan entre reinicios.
       - caddy_data:/data
       - caddy_config:/config
+    # Solo el permiso de abrir los puertos 80 y 443; ninguno más.
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     mem_limit: 256m
+    pids_limit: 200
     <<: *logs
 
 volumes:

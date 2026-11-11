@@ -28,11 +28,52 @@
         height: 100%;
         flex: 1;
       }
+      /* Lo que se ve mientras se descarga la app (la primera vez tarda unos segundos): al arrancar, la app lo sustituye. */
+      .arranque {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: #545a56;
+        font-size: 14px;
+      }
+      .arranque img {
+        width: 84px;
+        height: 84px;
+        border-radius: 20px;
+      }
+      .arranque .rueda {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 3px solid rgba(29, 107, 69, 0.18);
+        border-top-color: #1d6b45;
+        animation: arranque-giro 0.9s linear infinite;
+      }
+      @keyframes arranque-giro {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .arranque .rueda {
+          animation-duration: 2.5s;
+        }
+      }
     </style>
   </head>
 
   <body>
     <noscript>Hace falta activar JavaScript para usar esta app.</noscript>
-    <div id="root"></div>
+    <div id="root">
+      <div class="arranque" role="status" aria-live="polite">
+        <img src="/icons/icon-192.png" alt="" />
+        <div class="rueda"></div>
+        <span>Cargando Smart Fitness Coach…</span>
+      </div>
+    </div>
   </body>
 </html>

@@ -2,6 +2,16 @@
 # DOMAIN y ACME_EMAIL salen del .env de la raíz (ver DESPLIEGUE.md).
 {
 	email {$ACME_EMAIL}
+	# Sin interfaz de administración: la configuración solo cambia reconstruyendo la imagen.
+	admin off
+	servers {
+		# Quien manda una petición a cuentagotas para ocupar conexiones se queda fuera.
+		timeouts {
+			read_header 10s
+			read_body 60s
+			idle 2m
+		}
+	}
 }
 
 {$DOMAIN} {
@@ -30,7 +40,12 @@
 		request_body {
 			max_size 9MB
 		}
-		reverse_proxy api:3000
+		reverse_proxy api:3000 {
+			# Las conexiones con el servidor se sueltan antes de que él las cierre (65 s): sin errores 502 sueltos.
+			transport http {
+				keepalive 30s
+			}
+		}
 	}
 
 	# La web: una sola página, así que cualquier ruta que no sea un archivo carga index.html.
@@ -41,7 +56,10 @@
 		@page not path /_expo/static/* /assets/*
 		header @page Cache-Control "no-cache"
 		try_files {path} /index.html
-		file_server
+		# Las versiones ya comprimidas al construir la imagen (Brotli o gzip, la que acepte el navegador).
+		file_server {
+			precompressed br gzip
+		}
 	}
 
 	log {

@@ -12,6 +12,9 @@ COPY app/ ./
 ARG EXPO_PUBLIC_API_URL=/api
 ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
 RUN npx expo export --platform web --output-dir dist
+# Versiones .br y .gz de cada archivo, para que Caddy no tenga que comprimir en cada visita.
+COPY deploy/precompress.mjs /tmp/precompress.mjs
+RUN node /tmp/precompress.mjs dist
 
 # 2. Servirla.
 FROM caddy:2-alpine

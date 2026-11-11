@@ -33,6 +33,9 @@ export function calorieFloor(sex: Sex): number {
   return MIN_CALORIES[sex];
 }
 
+/** IMC a partir del cual la proteína y la grasa dejan de calcularse sobre el peso real (ver `estimateNutrition`). */
+const REFERENCE_BMI = 30;
+
 /** Parte de las calorías que va a hidratos en los repartos especiales (el resto lo cubre la grasa). */
 const CARB_SHARE: Record<Exclude<MacroStyle, "standard">, number> = { lowcarb: 0.25, keto: 0.05 };
 
@@ -137,18 +140,28 @@ export function estimateNutrition(input: NutritionInput): NutritionEstimate {
     );
   }
 
+  // La proteína y la grasa van por kilo de peso, pero con mucho peso ese cálculo se dispara (a 160 kg
+  // salían más de 330 g de proteína y, entre proteína y grasa, más calorías que el objetivo). Por encima
+  // de un IMC de 30 se calculan sobre el peso que daría ese IMC con la misma altura.
+  const referenceKg = Math.min(input.weightKg, REFERENCE_BMI * (input.heightCm / 100) ** 2);
+  if (referenceKg < input.weightKg) {
+    notes.push(
+      `La proteína y la grasa se calculan sobre un peso de referencia de ${Math.round(referenceKg)} kg (el de un IMC de ${REFERENCE_BMI} con tu altura), no sobre tu peso actual: así el reparto es realista y las calorías cuadran.`,
+    );
+  }
+
   const macroStyle = input.macroStyle ?? "standard";
-  const proteinG = round(input.weightKg * proteinPerKg, 5);
+  const proteinG = round(referenceKg * proteinPerKg, 5);
   let fatG: number;
   let carbsG: number;
   if (macroStyle === "standard") {
     // Grasa: ~0,9 g/kg, sin bajar del 20 % de las calorías.
-    fatG = round(Math.max(input.weightKg * 0.9, (calories * 0.2) / 9), 5);
+    fatG = round(Math.max(referenceKg * 0.9, (calories * 0.2) / 9), 5);
     carbsG = Math.max(0, round((calories - proteinG * 4 - fatG * 9) / 4, 5));
   } else {
     // Hidratos fijados por el reparto; la grasa cubre el resto (al menos 0,6 g/kg).
     const plannedCarbs = round((calories * CARB_SHARE[macroStyle]) / 4, 5);
-    fatG = round(Math.max(input.weightKg * 0.6, (calories - proteinG * 4 - plannedCarbs * 4) / 9), 5);
+    fatG = round(Math.max(referenceKg * 0.6, (calories - proteinG * 4 - plannedCarbs * 4) / 9), 5);
     carbsG = Math.max(0, Math.min(plannedCarbs, round((calories - proteinG * 4 - fatG * 9) / 4, 5)));
     notes.push(
       macroStyle === "keto"

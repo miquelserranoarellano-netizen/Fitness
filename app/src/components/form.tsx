@@ -1,5 +1,5 @@
 import { Check, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View, type KeyboardTypeOptions, type StyleProp, type ViewStyle } from "react-native";
 import { t } from "@/i18n";
 import { addDays, daysBetween, formatDate, today } from "@/lib/dates";
@@ -11,6 +11,12 @@ export type Option<T> = { value: T; label: string; description?: string };
 /** Caja de campo: borde y fondo del tema. */
 const box = (colors: Palette) => ({ borderColor: colors.lineStrong, backgroundColor: colors.raised });
 
+/**
+ * La etiqueta del `Field` que envuelve a un campo: así los campos sin `accessibilityLabel` propio se
+ * anuncian con ella en los lectores de pantalla (antes muchos no tenían nombre).
+ */
+const FieldLabel = createContext<string | undefined>(undefined);
+
 export function Field({ label, hint, optional, children, style }: { label: string; hint?: string; optional?: boolean; children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const colors = useColors();
   return (
@@ -19,7 +25,7 @@ export function Field({ label, hint, optional, children, style }: { label: strin
         {label}
         {optional ? <Text style={{ color: colors.subtle, fontWeight: "400" }}> · {t("opcional")}</Text> : null}
       </Txt>
-      {children}
+      <FieldLabel.Provider value={label}>{children}</FieldLabel.Provider>
       {hint ? <Txt variant="tiny">{hint}</Txt> : null}
     </View>
   );
@@ -42,6 +48,7 @@ type InputProps = {
 
 export function Input({ value, onChangeText, placeholder, keyboardType, maxLength, multiline, onBlur, autoCapitalize = "sentences", autoCorrect, style, accessibilityLabel }: InputProps) {
   const colors = useColors();
+  const fieldLabel = useContext(FieldLabel);
   return (
     <TextInput
       value={value}
@@ -56,7 +63,7 @@ export function Input({ value, onChangeText, placeholder, keyboardType, maxLengt
       autoCorrect={autoCorrect}
       spellCheck={autoCorrect}
       autoComplete={autoCorrect === false ? "off" : undefined}
-      accessibilityLabel={accessibilityLabel}
+      accessibilityLabel={accessibilityLabel ?? fieldLabel}
       style={[styles.input, box(colors), { color: colors.fg }, multiline && { minHeight: 84, paddingTop: 12, textAlignVertical: "top" }, style as object]}
     />
   );
@@ -65,10 +72,12 @@ export function Input({ value, onChangeText, placeholder, keyboardType, maxLengt
 /** Campo numérico con la unidad al final («kg», «cm», «años»…). */
 export function UnitInput({ unit, integer, style, ...props }: Omit<InputProps, "keyboardType" | "multiline"> & { unit: string; integer?: boolean }) {
   const colors = useColors();
+  const fieldLabel = useContext(FieldLabel);
   return (
     <View style={[styles.input, box(colors), { flexDirection: "row", alignItems: "center", paddingRight: 12 }, style]}>
       <TextInput
         {...props}
+        accessibilityLabel={props.accessibilityLabel ?? fieldLabel}
         placeholderTextColor={colors.subtle}
         keyboardType={integer ? "number-pad" : "decimal-pad"}
         style={[{ flex: 1, minWidth: 0, width: "100%", color: colors.fg, fontSize: 16, height: "100%" }, tabular]}

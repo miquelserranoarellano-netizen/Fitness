@@ -5,6 +5,7 @@ import { Field, Input } from "@/components/form";
 import { Screen } from "@/components/screen";
 import { Button, Card, Notice, Txt } from "@/components/ui";
 import { RequestError, WorkingPanel, useManualMeal } from "@/features/meals/components";
+import { AiConsentCard, useAiConsent } from "@/features/meals/consent";
 import { draftFromAnalysis, setMealDraft } from "@/features/meals/draft";
 import { useAvoidList, useServerRequest } from "@/features/meals/hooks";
 import { t } from "@/i18n";
@@ -18,6 +19,7 @@ export default function DescribeMeal() {
   const manual = useManualMeal();
   const avoid = useAvoidList();
   const request = useServerRequest();
+  const consent = useAiConsent();
   const [text, setText] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const loading = request.state.status === "loading";
@@ -34,6 +36,15 @@ export default function DescribeMeal() {
     setMealDraft(draftFromAnalysis(analysis, "texto"));
     router.replace("/comida/nueva");
   };
+
+  // Sin el permiso no se envía ningún texto.
+  if (!consent.granted) {
+    return (
+      <Screen>
+        <AiConsentCard onAccept={consent.grant} onManual={manual} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen description={t("Escribe lo que has comido, con cantidades si las sabes. La IA lo separa en alimentos y busca sus cifras; después puedes corregirlo.")}>

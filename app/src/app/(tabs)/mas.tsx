@@ -37,7 +37,7 @@ export default function More() {
       {isWeb ? (
         <Notice title={t("Versión web de prueba")}>
           {t(
-            "Tus datos se guardan en este navegador. Exporta una copia de vez en cuando (Perfil → Tus datos). En el iPhone, añade la web a la pantalla de inicio: si no, Safari puede borrar los datos tras unos días sin abrirla.",
+            "Tus datos se guardan en este navegador. Exporta una copia de vez en cuando (Perfil → Tus datos): con ella podrás recuperarlos o pasarlos a la app del móvil. En el iPhone, añade la web a la pantalla de inicio: si no, Safari puede borrar los datos tras unos días sin abrirla.",
           )}
         </Notice>
       ) : null}

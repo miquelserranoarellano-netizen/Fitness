@@ -19,7 +19,8 @@ export const LANGS = {
   de: { name: "alemán (Deutsch)", meal: "Mahlzeit", food: "Lebensmittel" },
 };
 
-export const pickLanguage = (language) => (Object.hasOwn(LANGS, language) ? language : "es");
+// Solo cadenas: un objeto en `language` (del JSON o de `?language[x]=…`) hacía fallar la petición con un 500.
+export const pickLanguage = (language) => (typeof language === "string" && Object.hasOwn(LANGS, language) ? language : "es");
 
 /** Lo que el usuario evita (alergias y alimentos excluidos): como mucho 20 entradas cortas. */
 export function cleanAvoidList(avoid) {
@@ -145,6 +146,9 @@ export class AnalysisError extends Error {
 /** Traduce los errores del SDK de Anthropic a códigos de la app, del más concreto al más general. */
 export function mapAnthropicError(error) {
   if (error instanceof AnalysisError) return error;
+  if (error instanceof Anthropic.APIUserAbortError) {
+    return new AnalysisError("cancelled", 499, "Petición cancelada por quien la hizo.", error);
+  }
   if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) {
     return new AnalysisError("ai_auth_failed", 503, "La clave de Anthropic del servidor no es válida o no tiene permiso.", error);
   }
@@ -184,7 +188,7 @@ const TIMEOUT_MS = 50_000;
  * - `fallbacks: "default"`: si el modelo declina por política, la API reintenta en otro modelo.
  * - `effort` opcional (`ANTHROPIC_EFFORT`); sin él, el del modelo.
  */
-export async function requestAnalysis({ client, model, effort, source, language, imageBase64, mediaType, text, avoid }) {
+export async function requestAnalysis({ client, model, effort, source, language, imageBase64, mediaType, text, avoid, signal }) {
   if (!client) throw new AnalysisError("ai_not_configured", 503, "El servidor no tiene configurada la clave de Anthropic.");
 
   const userContent =
@@ -207,7 +211,8 @@ export async function requestAnalysis({ client, model, effort, source, language,
         messages: [{ role: "user", content: userContent }],
         output_config: { ...(effort ? { effort } : {}), format: { type: "json_schema", schema: ANALYSIS_SCHEMA } },
       },
-      { timeout: TIMEOUT_MS, maxRetries: 1 },
+      // `signal`: si quien lo pidió se va, se corta la petición (y deja de gastar).
+      { timeout: TIMEOUT_MS, maxRetries: 1, ...(signal ? { signal } : {}) },
     );
   } catch (error) {
     throw mapAnthropicError(error);
@@ -239,6 +244,11 @@ export function parseAnalysisResponse(response) {
 }
 
 /* ───────────────────────────── Resultado para la app ───────────────────────────── */
+
+// Los textos de la respuesta vienen de la IA y de bases de datos abiertas: siempre acotados.
+const MAX_QUERY_CHARS = 80;
+const MAX_NAME_CHARS = 120;
+const MAX_NOTES_CHARS = 400;
 
 export const clampNum = (value, min, max, fallback = 0) => {
   const number = Number(value);
@@ -280,7 +290,8 @@ export async function enrichItem(raw, language, avoid, lookupFood) {
   };
 
   const match = await lookupFood({
-    search_query_en: raw.search_query_en,
+    // Lo escribe la IA: acotado, porque acaba en una búsqueda externa y en la caché.
+    search_query_en: String(raw.search_query_en ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_QUERY_CHARS),
     name: item.name,
     is_packaged: Boolean(raw.is_packaged),
     grams: item.grams,
@@ -293,7 +304,7 @@ export async function enrichItem(raw, language, avoid, lookupFood) {
     item.carbs_g = Math.round(match.carbs100 * factor);
     item.fat_g = Math.round(match.fat100 * factor);
     item.source = match.source; // "usda" | "off"
-    item.matched_name = match.matchedName;
+    item.matched_name = String(match.matchedName ?? "").slice(0, MAX_NAME_CHARS) || null;
     applyExtras(item, match, factor);
   }
   return item;
@@ -316,7 +327,14 @@ export function calorieRange(items) {
   return { min: Math.round(total * (1 - margin)), max: Math.round(total * (1 + margin)) };
 }
 
-export const emptyResult = (notes = "") => ({ is_food: false, dish_name: "", items: [], total_calories_min: 0, total_calories_max: 0, notes });
+export const emptyResult = (notes = "") => ({
+  is_food: false,
+  dish_name: "",
+  items: [],
+  total_calories_min: 0,
+  total_calories_max: 0,
+  notes: String(notes).slice(0, MAX_NOTES_CHARS),
+});
 
 /** Convierte el análisis de la IA en el resultado que espera la app. */
 export async function buildResult(parsed, language, avoid, lookupFood) {
@@ -329,6 +347,6 @@ export async function buildResult(parsed, language, avoid, lookupFood) {
     items,
     total_calories_min: range.min,
     total_calories_max: range.max,
-    notes: String(parsed.notes || ""),
+    notes: String(parsed.notes || "").slice(0, MAX_NOTES_CHARS),
   };
 }

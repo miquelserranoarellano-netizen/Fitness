@@ -29,6 +29,7 @@ const SERVER_ERROR_CODES = [
   "rate_limited",
   "quota_exceeded",
   "unauthorized",
+  "auth_blocked",
   "bad_request",
   "too_large",
   "not_found",
@@ -42,6 +43,8 @@ export type ApiErrorCode =
   | ServerErrorCode
   /** No hay dirección del servidor (ver `api-config.ts`). */
   | "no_server"
+  /** La dirección no usa HTTPS y no es de la red local: no se manda nada. */
+  | "insecure_server"
   /** El teléfono no llega al servidor. */
   | "network"
   /** El servidor no ha respondido a tiempo. */
@@ -71,41 +74,46 @@ export class ApiError extends Error {
 
 /* ───────────────────────────── Respuestas ───────────────────────────── */
 
+// Lo que llega del servidor se guarda en la base de datos y se enseña en pantalla: aunque el servidor sea
+// el nuestro, los textos se acotan y las cifras se dejan entre 0 y un máximo razonable.
+const text = (max: number) => z.string().transform((value) => value.slice(0, max));
+const amount = (max: number) => z.number().transform((value) => Math.min(max, Math.max(0, value)));
+
 const itemSchema = z.object({
-  name: z.string(),
-  grams: z.number(),
-  calories: z.number(),
-  protein_g: z.number(),
-  carbs_g: z.number(),
-  fat_g: z.number(),
-  fiber_g: z.number().optional(),
-  sugar_g: z.number().optional(),
-  sodium_mg: z.number().optional(),
-  confidence: z.number(),
+  name: text(120),
+  grams: amount(10_000),
+  calories: amount(20_000),
+  protein_g: amount(2_000),
+  carbs_g: amount(4_000),
+  fat_g: amount(2_000),
+  fiber_g: amount(1_000).optional(),
+  sugar_g: amount(4_000).optional(),
+  sodium_mg: amount(200_000).optional(),
+  confidence: amount(1),
   source: z.enum(["usda", "off", "ai"]),
-  matched_name: z.string().nullable(),
-  may_contain: z.array(z.string()).default([]),
+  matched_name: text(160).nullable(),
+  may_contain: z.array(text(60)).max(40).default([]),
 });
 
 const per100Schema = z.object({
-  calories: z.number(),
-  protein_g: z.number(),
-  carbs_g: z.number(),
-  fat_g: z.number(),
-  fiber_g: z.number().nullable(),
-  sugar_g: z.number().nullable(),
-  sodium_mg: z.number().nullable(),
+  calories: amount(1_000),
+  protein_g: amount(100),
+  carbs_g: amount(100),
+  fat_g: amount(100),
+  fiber_g: amount(100).nullable(),
+  sugar_g: amount(100).nullable(),
+  sodium_mg: amount(100_000).nullable(),
 });
 
 const resultSchema = z.object({
   is_food: z.boolean(),
-  dish_name: z.string(),
-  items: z.array(itemSchema),
-  total_calories_min: z.number(),
-  total_calories_max: z.number(),
-  notes: z.string(),
+  dish_name: text(160),
+  items: z.array(itemSchema).max(40),
+  total_calories_min: amount(200_000),
+  total_calories_max: amount(200_000),
+  notes: text(1_000),
   per_100g: per100Schema.optional(),
-  serving_grams: z.number().nullable().optional(),
+  serving_grams: amount(10_000).nullable().optional(),
 });
 
 const healthSchema = z.object({ ok: z.boolean(), ai: z.boolean(), auth: z.boolean().default(false) });
@@ -247,6 +255,22 @@ export function resolveApiUrl({
   return host && isLocalNetworkHost(host) ? `http://${host}:${port}` : "";
 }
 
+const PRIVATE_IPV4 = /^(127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/;
+
+/**
+ * ¿Se puede mandar a esta dirección el código de acceso y las fotos? Sí con HTTPS. Sin cifrar, solo a un
+ * servidor de desarrollo en el propio equipo o en la red local; nunca a una dirección de internet, donde
+ * cualquiera en el camino (una wifi pública, por ejemplo) podría leerlos.
+ */
+export function isTransportSafe(baseUrl: string): boolean {
+  const match = /^(https?):\/\/(\[[^\]]+\]|[^/:?#]+)/i.exec(baseUrl.trim());
+  if (!match) return false;
+  if (match[1].toLowerCase() === "https") return true;
+  const host = match[2].toLowerCase();
+  if (host === "localhost" || host === "[::1]" || host.endsWith(".local") || host.endsWith(".localhost")) return true;
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host) && PRIVATE_IPV4.test(host);
+}
+
 /* ───────────────────────────── Cliente ───────────────────────────── */
 
 export type ApiClientOptions = {
@@ -294,6 +318,7 @@ export function createApiClient(options: ApiClientOptions) {
     { method, body, timeoutMs, signal }: { method: "GET" | "POST"; body?: unknown; timeoutMs: number; signal?: AbortSignal },
   ): Promise<unknown> {
     if (!baseUrl) throw new ApiError("no_server");
+    if (!isTransportSafe(baseUrl)) throw new ApiError("insecure_server", { url: baseUrl });
     if (signal?.aborted) throw new ApiError("cancelled", { url: baseUrl });
 
     const controller = new AbortController();
@@ -404,6 +429,7 @@ export type ApiClient = ReturnType<typeof createApiClient>;
 
 const MESSAGES: Record<ApiErrorCode, string> = {
   no_server: msg("Falta la dirección del servidor. Configúrala en EXPO_PUBLIC_API_URL (app/.env)."),
+  insecure_server: msg("La dirección del servidor ({url}) no usa HTTPS. Para proteger tus fotos y tu código de acceso, la app solo se conecta sin cifrar a un servidor de tu red local."),
   network: msg("No se puede conectar con el servidor ({url}). Comprueba la conexión a internet y que el servidor está encendido."),
   timeout: msg("El servidor ha tardado demasiado en responder. Prueba otra vez."),
   cancelled: msg("Cancelado."),
@@ -421,6 +447,7 @@ const MESSAGES: Record<ApiErrorCode, string> = {
   rate_limited: msg("Demasiadas peticiones seguidas. Espera un minuto."),
   quota_exceeded: msg("Se ha llegado al límite de análisis con IA de hoy. Mañana vuelve a estar disponible; mientras, puedes añadir la comida a mano o con el código de barras."),
   unauthorized: msg("Falta tu código de acceso o ya no es válido. Ponlo en Más → Servidor y código de acceso."),
+  auth_blocked: msg("Demasiados códigos incorrectos desde tu conexión. Espera 10 minutos y revisa el código antes de probar otra vez."),
   bad_request: msg("El servidor no ha entendido la petición."),
   too_large: msg("La foto es demasiado grande."),
   not_found: msg("No hemos encontrado este producto. Puedes escribirlo o añadirlo a mano."),

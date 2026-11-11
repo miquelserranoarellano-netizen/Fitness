@@ -5,7 +5,8 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+# --ignore-scripts: ninguna dependencia ejecuta código al instalarse (no lo necesitan: son JavaScript puro).
+RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean --force
 
 COPY index.js ./
 COPY src ./src

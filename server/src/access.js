@@ -75,6 +75,48 @@ export function findTester(testers, code) {
   return found;
 }
 
+/**
+ * Freno a quien prueba códigos al azar: tras `limit` códigos incorrectos desde la misma dirección en
+ * `windowMs`, esa dirección queda bloqueada hasta que pase la ventana. Los aciertos no cuentan, así que
+ * quien tiene un código bueno no se ve afectado por sus propias peticiones.
+ */
+export function createFailureTracker({ limit = 10, windowMs = 10 * 60 * 1000, maxEntries = 10_000, now = () => Date.now() } = {}) {
+  const entries = new Map(); // dirección -> { count, resetAt }
+
+  const current = (key) => {
+    const entry = entries.get(key);
+    if (!entry) return null;
+    if (entry.resetAt <= now()) {
+      entries.delete(key);
+      return null;
+    }
+    return entry;
+  };
+
+  return {
+    /** ¿Está bloqueada esta dirección? */
+    blocked(key) {
+      return limit > 0 && (current(key)?.count ?? 0) >= limit;
+    },
+    /** Apunta un código incorrecto. */
+    fail(key) {
+      const entry = current(key);
+      if (entry) {
+        entry.count += 1;
+        return;
+      }
+      // Memoria acotada: si se llena, se sueltan las entradas más antiguas.
+      if (entries.size >= maxEntries) {
+        for (const oldest of entries.keys()) {
+          entries.delete(oldest);
+          if (entries.size < maxEntries) break;
+        }
+      }
+      entries.set(key, { count: 1, resetAt: now() + windowMs });
+    },
+  };
+}
+
 const madridDay = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" });
 
 /**
@@ -104,6 +146,14 @@ export function createDailyQuota({ perPerson = 40, total = 300, now = () => new 
       counts.set(name, used + 1);
       all += 1;
       return null;
+    },
+    /** Devuelve un análisis que al final no se hizo (la IA no llegó a trabajar). */
+    refund(name) {
+      roll();
+      const used = counts.get(name) ?? 0;
+      if (used === 0) return;
+      counts.set(name, used - 1);
+      all = Math.max(0, all - 1);
     },
     status(name) {
       roll();
