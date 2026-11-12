@@ -36,6 +36,31 @@ su propio subdominio para no tocar la compilación de Expo y para que la portada
 
 No hace falta un plan de *hosting web* (los compartidos no ejecutan Docker): tiene que ser un **VPS**.
 
+## Subirlo desde el PC (camino corto)
+
+`deploy/subir.ps1` lo hace todo desde Windows por SSH, sin GitHub en el VPS: copia lo último confirmado, prepara el
+VPS la primera vez (`deploy/setup-vps.sh`, SSH solo con clave), crea el `.env` con un código de acceso por persona
+y sin IA, y arranca la portada, la app y el servidor. Para actualizar, se vuelve a ejecutar (el `.env` se conserva).
+
+1. **Clave SSH en el PC:** `C:\Users\<tú>\.ssh\ikyndo_vps` (si no existe:
+   `ssh-keygen -t ed25519 -f $env:USERPROFILE\.ssh\ikyndo_vps -N '""'`).
+2. **Al crear el VPS en hPanel** (KVM 1, Ubuntu 24.04), en «Clave SSH» pega el contenido de `ikyndo_vps.pub` (una
+   línea que empieza por `ssh-ed25519`). Apunta la **IP**.
+3. **DNS:** registros **A** de `@` y de `app` con esa IP (paso 1.3).
+4. **En la raíz del repositorio**, en PowerShell:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File deploy\subir.ps1 -Ip IP_DEL_VPS -Dominio tudominio.com -Correo tu@correo.com -Personas "miquel,marc"
+   ```
+
+5. **Los códigos de acceso** (uno por persona; pásale a cada una solo el suyo):
+
+   ```powershell
+   ssh -i $env:USERPROFILE\.ssh\ikyndo_vps root@IP_DEL_VPS "grep ACCESS_CODES /opt/fitness/.env"
+   ```
+
+Después, el paso 7 (probar desde el móvil). Los pasos 1 a 6 de abajo son el camino a mano, con `git clone`.
+
 ## 0. Qué necesitas
 
 | Qué | Para qué |
@@ -197,7 +222,8 @@ Si algo falla, `docker compose logs --tail=100 api` (servidor) y `docker compose
 
 | Qué | Comando (en `/opt/fitness`) |
 | --- | --- |
-| Actualizar a lo último de `main` | `bash deploy/update.sh` |
+| Actualizar (instalado desde el PC) | En el PC: `deploy\subir.ps1` con los mismos datos |
+| Actualizar (instalado con `git clone`) | `bash deploy/update.sh` |
 | Ver qué pasa | `docker compose logs --tail=100 api` |
 | Uso por persona (sin contenido) | `docker compose logs --no-log-prefix api \| grep '\[uso\]'` |
 | Intentos con código malo | `docker compose logs --no-log-prefix api \| grep '\[acceso\]'` |

@@ -11,6 +11,9 @@ A petición de Miquel, para no gastar tokens de Anthropic con quien pruebe la ap
   Servidor, ni los avisos de alergias de la IA. Nutrición lleva arriba «Añadir comida» (código de barras,
   favoritas, a mano). Textos de bienvenida, Perfil, Más y Servidor sin IA, traducidos (7 nuevos).
 - Servidor sin `ANTHROPIC_API_KEY` (`.env.example`, `DESPLIEGUE.md`). La portada ya no habla de IA.
+- **Subida desde el PC:** `../deploy/subir.ps1` (Windows, por SSH con la clave `~/.ssh/ikyndo_vps`) copia el código
+  y ejecuta `../deploy/instalar.sh` en el VPS: prepara el servidor, crea el `.env` sin IA y arranca. Sin probar
+  contra un VPS real (aún no está contratado).
 - **Comprobado:** `npm run check`, `npm run i18n` y la web compilada en el navegador.
 
 ## Portada de IKYNDO y Hostinger (11/11/2026)
