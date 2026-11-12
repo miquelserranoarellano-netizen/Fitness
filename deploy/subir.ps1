@@ -52,4 +52,4 @@ Remove-Item $paquete
 Write-Host "==> Instalando en el VPS"
 & ssh @opciones "root@$Ip" "mkdir -p /opt/fitness && tar -xzf /tmp/ikyndo.tar.gz -C /opt/fitness && rm /tmp/ikyndo.tar.gz && bash /opt/fitness/deploy/instalar.sh '$Dominio' '$Correo' '$Personas'"
 if ($LASTEXITCODE -ne 0) { Fallo "La instalación ha fallado: mira los mensajes de arriba." }
-Write-Host "Hecho. Portada: https://$Dominio  ·  App: https://app.$Dominio" -ForegroundColor Green
+Write-Host "Hecho: https://$Dominio (presentación y app)" -ForegroundColor Green

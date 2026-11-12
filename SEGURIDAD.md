@@ -45,16 +45,12 @@ Revisión del 10 de noviembre de 2026, antes de poner la app en un VPS para la p
 | Baja | La web enseñaba la lista de todas sus pantallas (`/_sitemap`) y una página de error en inglés. | Lista desactivada y página propia de «no encontrada». |
 | Baja | El importador de copias es una entrada no fiable. | Validación con Zod, nombres de tablas y columnas solo del esquema, valores siempre como parámetros, rutas de fotos descartadas y todo en una transacción. |
 
-### Portada de IKYNDO (11 de noviembre de 2026)
+### Presentación de IKYNDO (11 y 12 de noviembre de 2026)
 
-La portada (`deploy/landing/`) va en el dominio principal y la app pasa a `app.<dominio>`, con las mismas cabeceras
-que tenía (`deploy/Caddyfile`).
-
-- **Otro origen que la app:** la portada no puede leer ni tocar los datos que la app guarda en el navegador.
-- **Sin JavaScript:** solo HTML, CSS y el logo. CSP `default-src 'none'` (solo imágenes y estilos del propio
-  dominio), sin formularios ni marcos, HSTS, `nosniff` y `noindex`.
-- `www.<dominio>` redirige a la portada y `<dominio>/app`, a la app. Sin probar en el VPS, como el resto de Caddy;
-  la CSP de la portada se probó en local con un servidor con las mismas cabeceras.
+La presentación empezó como una portada estática aparte (con la app en `app.<dominio>`). El 12/11 pasó a ser la
+primera pantalla de la propia app en la web (`app/src/features/presentation/`): una sola dirección (`<dominio>`) y un
+solo bloque en el Caddyfile, con las cabeceras de siempre (CSP estricta, COOP/COEP, HSTS, `noindex`). No añade
+scripts ni recursos de fuera: son las mismas piezas de la app. `www.<dominio>` redirige a `<dominio>`.
 
 ### Auditoría antes de subir a Hostinger (11 de noviembre de 2026)
 
@@ -67,8 +63,8 @@ Sin problemas nuevos que corregir. Comprobado:
 - **Servidor en producción:** no arranca sin `ACCESS_CODES`, CORS cerrado (mismo dominio), 45 pruebas.
 - **Dependencias:** servidor con 0 avisos; app con los mismos 5 moderados de herramientas de compilación (ver
   «Riesgos aceptados»). `expo-doctor` no se pudo ejecutar (falla la propia herramienta al instalarse con `npx`).
-- **Configuración:** `docker-compose.yml`, imágenes, Caddyfile, `.env.example` y scripts del VPS coherentes con la
-  portada en el dominio y la app en `app.`. Lo único sin probar sigue siendo Docker y Caddy en el VPS real.
+- **Configuración:** `docker-compose.yml`, imágenes, Caddyfile, `.env.example` y scripts del VPS coherentes entre sí.
+  Lo único sin probar sigue siendo Docker y Caddy en el VPS real.
 - **IA apagada** (después de la auditoría): la app no enseña nada de IA (`AI_ENABLED`) y el `.env` va sin
   `ANTHROPIC_API_KEY`, así que nada sale hacia Anthropic ni se gasta nada. Del dispositivo solo sale el número de
   los códigos de barras que se buscan. El permiso, el cupo y los límites siguen en el código para cuando se encienda.

@@ -1,8 +1,8 @@
-# Caddy en el VPS: HTTPS automático con Let's Encrypt, la portada de IKYNDO, la web de la app y /api hacia el
-# servidor. DOMAIN y ACME_EMAIL salen del .env de la raíz (ver DESPLIEGUE.md):
-#   DOMAIN          → la portada (deploy/landing/)
-#   www.DOMAIN      → redirige a la portada
-#   app.DOMAIN      → la app y, en /api, el servidor
+# Caddy en el VPS: HTTPS automático con Let's Encrypt, la web de IKYNDO y /api hacia el servidor. Todo en una sola
+# dirección: la web es la app, que enseña la presentación a quien entra sin datos y el inicio a quien ya la usa.
+# DOMAIN y ACME_EMAIL salen del .env de la raíz (ver DESPLIEGUE.md):
+#   DOMAIN          → la web (presentación + app) y, en /api, el servidor
+#   www.DOMAIN      → redirige a DOMAIN
 {
 	email {$ACME_EMAIL}
 	# Sin interfaz de administración: la configuración solo cambia reconstruyendo la imagen.
@@ -17,51 +17,7 @@
 	}
 }
 
-# La portada: solo HTML, CSS y el logo, sin JavaScript. Va en otro origen que la app: no comparte nada con los
-# datos que la app guarda en el navegador.
 {$DOMAIN} {
-	encode zstd gzip
-
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Referrer-Policy "no-referrer"
-		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-		Cross-Origin-Opener-Policy "same-origin"
-		Cross-Origin-Resource-Policy "same-origin"
-		# Nada de scripts: solo imágenes y estilos de este mismo dominio.
-		Content-Security-Policy "default-src 'none'; img-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
-		# Versión de prueba: fuera de los buscadores.
-		X-Robots-Tag "noindex, nofollow"
-		Cache-Control "no-cache"
-		-Server
-	}
-
-	# «Entrar en la app» (y quien escriba tudominio.com/app): a la app, en su subdominio.
-	@app path /app /app/*
-	redir @app https://app.{$DOMAIN}/
-
-	handle {
-		root * /srv/landing
-		try_files {path} /index.html
-		file_server {
-			precompressed br gzip
-		}
-	}
-
-	log {
-		output stdout
-		format console
-	}
-}
-
-www.{$DOMAIN} {
-	redir https://{$DOMAIN}{uri} permanent
-}
-
-# La app (web) y el servidor en /api.
-app.{$DOMAIN} {
 	encode zstd gzip
 
 	header {
@@ -97,7 +53,7 @@ app.{$DOMAIN} {
 
 	# La web: una sola página, así que cualquier ruta que no sea un archivo carga index.html.
 	handle {
-		root * /srv/app
+		root * /srv
 		@static path /_expo/static/* /assets/*
 		header @static Cache-Control "public, max-age=31536000, immutable"
 		@page not path /_expo/static/* /assets/*
@@ -113,4 +69,8 @@ app.{$DOMAIN} {
 		output stdout
 		format console
 	}
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
 }

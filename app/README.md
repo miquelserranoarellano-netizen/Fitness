@@ -7,8 +7,8 @@
 Versión para móvil de Smart Fitness Coach: entrenador personal de hipertrofia con
 rutina generada por reglas, modo entrenamiento, seguimiento corporal, revisiones semanales y mensuales,
 análisis de puntos fuertes y débiles y evaluación de bloques. Se publica como web en el VPS de Hostinger
-(`app.tudominio.com`, con la portada de IKYNDO en `tudominio.com`; ver [`../DESPLIEGUE.md`](../DESPLIEGUE.md)), sin
-cuenta: los datos se guardan en el navegador o en el teléfono (SQLite).
+(`tudominio.com`, con la presentación de IKYNDO como primera pantalla; ver [`../DESPLIEGUE.md`](../DESPLIEGUE.md)),
+sin cuenta: los datos se guardan en el navegador o en el teléfono (SQLite).
 
 La **nutrición está a medias a propósito**: la app calcula el objetivo diario (calorías y macros) y si hay que
 ajustarlo, pero el registro de lo que se come lo aportará la app de fotos de comida. Ver
@@ -23,7 +23,7 @@ ajustarlo, pero el registro de lo que se come lo aportará la app de fotos de co
 | `npm test` | Solo las pruebas (dominio y base de datos, con `node:sqlite`) |
 | `npm run i18n` | Textos que faltan en los catálogos de inglés, francés y alemán |
 
-La versión publicada (portada y app en el VPS de Hostinger) se monta con Docker: ver [`../DESPLIEGUE.md`](../DESPLIEGUE.md).
+La versión publicada (presentación y app juntas en el VPS de Hostinger) se monta con Docker: ver [`../DESPLIEGUE.md`](../DESPLIEGUE.md).
 
 ## Estructura
 

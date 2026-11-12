@@ -5,8 +5,9 @@ de la app de Miquel; la fusión sigue `../fusion/PLAN-FUSION.md` (fases y decisi
 Las apps originales están en `../originales/`: son solo de consulta, no se modifican. Lee también `AGENTS.md` (Expo
 cambia en cada SDK: consulta la documentación de la v58 antes de usar una API) y `docs/ESTADO.md`.
 
-- **Web y App Store, un solo código.** La app se publica como web en el VPS de Hostinger (`app.<dominio>`, con la
-  portada de IKYNDO en el dominio: `../DESPLIEGUE.md`) y la del App Store sale de este mismo código con EAS. Antes
+- **Web y App Store, un solo código.** La app se publica como web en el VPS de Hostinger (`<dominio>`, con la
+  presentación de IKYNDO como primera pantalla en la web: `src/features/presentation/`, `../DESPLIEGUE.md`) y la del
+  App Store sale de este mismo código con EAS. Antes
   de añadir una dependencia, `npx expo install <paquete>` y comprueba que funciona en la web (o escóndela con
   `isWeb`) sin romper la compilación nativa.
 - **Dos mundos separados**: `src/domain/` son cálculos puros con pruebas; un número nunca sale de la interfaz ni de

@@ -13,7 +13,7 @@ con rutina por reglas, modo entrenamiento, seguimiento de peso y medidas y revis
 | --- | --- |
 | [`app/`](app/) | La app (Expo SDK 58, Expo Router, SQLite en el navegador o en el teléfono). Normas en `app/CLAUDE.md` |
 | [`server/`](server/) | Servidor que analiza fotos y textos de comida con Claude y busca las cifras en USDA y Open Food Facts |
-| [`deploy/`](deploy/) | Caddy, imagen de la web, portada de IKYNDO (`deploy/landing/`) y scripts del VPS |
+| [`deploy/`](deploy/) | Caddy, imagen de la web y scripts del VPS (`subir.ps1` para subirla desde el PC) |
 | [`fusion/`](fusion/) | El encargo, los resúmenes de las dos apps de partida y el plan de fusión |
 
 ## Arrancar la app
@@ -46,7 +46,7 @@ La app lo busca en el mismo ordenador, puerto 3000; para cambiarlo, `app/.env.ex
 
 ## En internet (VPS)
 
-La portada de IKYNDO (`deploy/landing/`), la web de la app y el servidor van juntos en un VPS con Docker y HTTPS
-automático (Caddy): `docker compose up -d --build` en la raíz, con el `.env` de [`.env.example`](.env.example).
-La portada queda en `tudominio.com` y la app en `app.tudominio.com`. Paso a paso para Hostinger, incluido el camino
-al App Store, en [`DESPLIEGUE.md`](DESPLIEGUE.md). Revisión de seguridad en [`SEGURIDAD.md`](SEGURIDAD.md).
+La web de IKYNDO (presentación y app, juntas en `tudominio.com`) y el servidor van en un VPS con Docker y HTTPS
+automático (Caddy): `docker compose up -d --build` en la raíz, con el `.env` de [`.env.example`](.env.example), o
+desde el PC con `deploy\subir.ps1`. Paso a paso para Hostinger, incluido el camino al App Store, en
+[`DESPLIEGUE.md`](DESPLIEGUE.md). Revisión de seguridad en [`SEGURIDAD.md`](SEGURIDAD.md).

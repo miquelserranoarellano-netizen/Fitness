@@ -62,7 +62,7 @@ fi
 
 # Aviso si el DNS aún no apunta aquí: sin eso, Caddy no consigue los certificados (lo reintenta solo).
 ips_vps=" $(hostname -I) "
-for nombre in "$dominio" "app.$dominio"; do
+for nombre in "$dominio" "www.$dominio"; do
   ip=$(getent ahostsv4 "$nombre" | awk 'NR==1 {print $1}' || true)
   if [ -z "$ip" ] || [[ "$ips_vps" != *" $ip "* ]]; then
     echo "AVISO: ${nombre} no apunta a este VPS (${ip:-sin registro}). Revisa el DNS (DESPLIEGUE.md, paso 1)."
@@ -74,5 +74,5 @@ docker compose up -d --build
 docker image prune -f >/dev/null
 docker compose ps
 echo
-echo "Listo: https://${dominio} (portada) y https://app.${dominio} (app)."
+echo "Listo: https://${dominio} (presentación y app)."
 echo "Códigos de acceso: grep ACCESS_CODES /opt/fitness/.env"
