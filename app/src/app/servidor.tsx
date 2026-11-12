@@ -9,6 +9,7 @@ import { t } from "@/i18n";
 import { cleanAccessCode, getAccessCode, MAX_ACCESS_CODE_LENGTH, setAccessCode } from "@/lib/access-code";
 import { ApiError, apiErrorMessage, type AccessStatus, type ServerHealth } from "@/lib/api";
 import { getApi } from "@/lib/api-config";
+import { AI_ENABLED } from "@/lib/features";
 import { isWeb } from "@/lib/web";
 import { space, useColors } from "@/theme";
 
@@ -71,7 +72,13 @@ export default function ServerSettings() {
   const changed = clean !== (saved ?? "");
 
   return (
-    <Screen description={t("El servidor analiza con IA las comidas que fotografías o escribes y busca los códigos de barras. El resto de la app funciona sin él.")}>
+    <Screen
+      description={
+        AI_ENABLED
+          ? t("El servidor analiza con IA las comidas que fotografías o escribes y busca los códigos de barras. El resto de la app funciona sin él.")
+          : t("El servidor busca los productos por su código de barras en Open Food Facts. El resto de la app funciona sin él.")
+      }
+    >
       <Card>
         <CardHeader title={t("Estado")} />
         <View style={{ gap: space.md }}>
@@ -84,7 +91,7 @@ export default function ServerSettings() {
           ) : check.status === "ok" ? (
             <>
               <Row label={t("Conexión")} value={t("Correcta")} />
-              <Row label={t("Análisis con IA")} value={check.health.ai ? t("Disponible") : t("Sin configurar en el servidor")} />
+              {AI_ENABLED ? <Row label={t("Análisis con IA")} value={check.health.ai ? t("Disponible") : t("Sin configurar en el servidor")} /> : null}
               <StatusNotice health={check.health} access={check.access} />
             </>
           ) : check.error instanceof ApiError && check.error.code === "unauthorized" ? (
@@ -137,20 +144,22 @@ export default function ServerSettings() {
         </View>
       </Card>
 
-      <Card>
-        <CardHeader
-          title={t("Permiso para analizar con IA")}
-          description={t("Las fotos y textos de comida que analizas, con tus alergias, pasan por este servidor (que no los guarda) hasta Claude, la IA de Anthropic, que reconoce los alimentos.")}
-        />
-        <View style={{ gap: space.md }}>
-          <Row label={t("Estado")} value={consent.granted ? t("Aceptado") : t("Sin aceptar: se te preguntará antes del primer análisis")} />
-          {consent.granted ? (
-            <Button size="sm" variant="secondary" onPress={consent.revoke}>
-              {t("Retirar el permiso")}
-            </Button>
-          ) : null}
-        </View>
-      </Card>
+      {AI_ENABLED ? (
+        <Card>
+          <CardHeader
+            title={t("Permiso para analizar con IA")}
+            description={t("Las fotos y textos de comida que analizas, con tus alergias, pasan por este servidor (que no los guarda) hasta Claude, la IA de Anthropic, que reconoce los alimentos.")}
+          />
+          <View style={{ gap: space.md }}>
+            <Row label={t("Estado")} value={consent.granted ? t("Aceptado") : t("Sin aceptar: se te preguntará antes del primer análisis")} />
+            {consent.granted ? (
+              <Button size="sm" variant="secondary" onPress={consent.revoke}>
+                {t("Retirar el permiso")}
+              </Button>
+            ) : null}
+          </View>
+        </Card>
+      ) : null}
 
       <Txt variant="tiny">{t("Tus entrenamientos, medidas y comidas registradas no salen de tu dispositivo.")}</Txt>
     </Screen>
@@ -162,8 +171,15 @@ function StatusNotice({ health, access }: { health: ServerHealth; access: Access
     return <Notice tone="warning">{t("Este servidor no pide código: es un servidor de desarrollo.")}</Notice>;
   }
   if (!access) {
-    return <Notice tone="warning">{t("Escribe tu código de acceso para analizar comidas con IA y buscar códigos de barras.")}</Notice>;
+    return (
+      <Notice tone="warning">
+        {AI_ENABLED
+          ? t("Escribe tu código de acceso para analizar comidas con IA y buscar códigos de barras.")
+          : t("Escribe tu código de acceso para buscar productos por su código de barras.")}
+      </Notice>
+    );
   }
+  if (!AI_ENABLED) return <Notice tone="positive" title={t("Código de {nombre}", { nombre: access.name })} />;
   return (
     <Notice tone="positive" title={t("Código de {nombre}", { nombre: access.name })}>
       {access.limit !== null

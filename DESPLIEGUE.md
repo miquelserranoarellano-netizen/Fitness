@@ -7,8 +7,12 @@ del App Store. Se hace una vez; después, actualizar es un comando.
 Navegador / móvil ──HTTPS 443──► Caddy (certificados, cabeceras de seguridad)
                                     ├── tudominio.com ──────► portada de IKYNDO (deploy/landing/: HTML y CSS)
                                     └── app.tudominio.com ──► la app web
-                                          └── /api ──► servidor Node (solo red interna de Docker) ──► Anthropic, USDA, Open Food Facts
+                                          └── /api ──► servidor Node (solo red interna de Docker) ──► Open Food Facts, USDA
 ```
+
+**Sin IA:** la app va con la IA apagada (`app/src/lib/features.ts`) y el servidor sin clave de Anthropic, así que no
+se gasta ni un token: las comidas se añaden por código de barras, desde favoritas o a mano. Para encenderla más
+adelante hacen falta las dos cosas: `EXPO_PUBLIC_AI=on` en `deploy/web.Dockerfile` y `ANTHROPIC_API_KEY` en `.env`.
 
 «Entrar en la app» en la portada lleva a `tudominio.com/app`, que Caddy redirige a `app.tudominio.com`. La app va en
 su propio subdominio para no tocar la compilación de Expo y para que la portada no comparta origen con los datos.
@@ -38,7 +42,6 @@ No hace falta un plan de *hosting web* (los compartidos no ejecutan Docker): tie
 | --- | --- |
 | VPS de Hostinger **KVM 1** (1 vCPU, 4 GB de RAM) con **Ubuntu 24.04** | Sobra para la prueba: hacen falta 2 GB de RAM para compilar la web con soltura; con 1 GB funciona, pero lento (el script añade memoria de intercambio) |
 | Un **dominio** propio, p. ej. `tudominio.com` | La portada va en el dominio y la app en `app.tudominio.com`: los certificados de HTTPS van asociados a esos nombres |
-| Clave de **Anthropic** con un **límite de gasto mensual** puesto en la consola | Análisis de fotos y textos |
 | Clave gratuita de **USDA** ([alta](https://fdc.nal.usda.gov/api-key-signup)) | Cifras de alimentos genéricos |
 | Acceso al repositorio de GitHub (es privado) | Descargar el código en el VPS |
 
@@ -131,10 +134,10 @@ echo "miquel:$(openssl rand -base64 18 | tr '+/' '-_')"
 echo "marc:$(openssl rand -base64 18 | tr '+/' '-_')"
 ```
 
-Edita `.env` (`nano .env`) y rellena `DOMAIN` (el dominio a secas, `tudominio.com`), `ACME_EMAIL`,
-`ANTHROPIC_API_KEY`, `USDA_API_KEY` y
-`ACCESS_CODES` con las líneas de antes separadas por comas (`miquel:…,marc:…`). A cada persona pásale **solo su
-código** (lo de después de `:`), por un canal privado.
+Edita `.env` (`nano .env`) y rellena `DOMAIN` (el dominio a secas, `tudominio.com`), `ACME_EMAIL`, `USDA_API_KEY`
+(opcional) y `ACCESS_CODES` con las líneas de antes separadas por comas (`miquel:…,marc:…`). **`ANTHROPIC_API_KEY`
+se queda vacía** (sin IA, sin gasto). A cada persona pásale **solo su código** (lo de después de `:`), por un canal
+privado: sirve para buscar productos por su código de barras.
 
 ## 6. Arrancar
 
@@ -158,7 +161,7 @@ curl https://app.tudominio.com/api/health
 
 1. Abre `https://tudominio.com`: sale la portada. Pulsa **«Entrar en la app»** (lleva a `https://app.tudominio.com`),
    haz el cuestionario y entra en **Más → Servidor y código de acceso**: pega tu código y pulsa «Guardar y
-   comprobar». Debe decir «Código de miquel · Hoy llevas 0 de 40 análisis».
+   comprobar». Debe decir «Código de miquel».
 2. **iPhone: añade la app a la pantalla de inicio** desde la app (`app.tudominio.com`), no desde la portada
    (Safari → Compartir → «Añadir a pantalla de inicio»), y úsala desde ese icono. Si se usa solo como pestaña de
    Safari, Safari puede borrar sus datos tras 7 días sin abrirla. Android: Chrome → menú → «Instalar aplicación».
@@ -173,9 +176,9 @@ cada comida: eso queda para la app del móvil.
 - [ ] La portada abre con candado (HTTPS) y «Entrar en la app» lleva a la app.
 - [ ] Cuestionario completo → informe inicial → Inicio con la rutina de hoy.
 - [ ] Empezar el entrenamiento, apuntar 2 o 3 series y terminarlo.
-- [ ] Más → Servidor y código de acceso: pegar el código y ver «Hoy llevas 0 de 40 análisis».
-- [ ] Nutrición → foto de un plato: sale el permiso de la IA, se acepta, reconoce los alimentos y se guarda.
-- [ ] Una comida escrita con texto y otra por código de barras (escribiendo el número).
+- [ ] Más → Servidor y código de acceso: pegar el código y ver «Código de …».
+- [ ] Nutrición → Añadir comida: una por código de barras (escribiendo el número) y otra a mano. No aparece nada
+      de IA (ni cámara ni «Escribir»).
 - [ ] Más → Apariencia e idioma: tema oscuro e inglés, y vuelta a español.
 - [ ] Perfil → Tus datos → Exportar: se descarga el archivo JSON.
 - [ ] Cerrar el navegador, volver a abrir el icono y comprobar que todo sigue ahí.
@@ -201,9 +204,9 @@ Si algo falla, `docker compose logs --tail=100 api` (servidor) y `docker compose
 | Añadir o retirar a alguien | Edita `ACCESS_CODES` en `.env` y `docker compose up -d` |
 | Reiniciar / parar | `docker compose restart` / `docker compose down` |
 
-El gasto tiene tres techos: el límite mensual de la consola de Anthropic, `DAILY_LIMIT_PER_PERSON` y
-`DAILY_LIMIT_TOTAL` (en `.env`). Los cupos diarios viven en memoria: se reinician a medianoche (hora de Madrid) y
-al reiniciar el servidor.
+Sin IA no hay gasto. Si un día se enciende, el gasto tiene tres techos: el límite mensual de la consola de
+Anthropic, `DAILY_LIMIT_PER_PERSON` y `DAILY_LIMIT_TOTAL` (en `.env`). Los cupos diarios viven en memoria: se
+reinician a medianoche (hora de Madrid) y al reiniciar el servidor.
 
 ## Si algo falla
 

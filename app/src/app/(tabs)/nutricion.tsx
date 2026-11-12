@@ -14,10 +14,11 @@ import { calorieFloor } from "@/domain/nutrition/targets";
 import { ALLERGEN_LABEL, DIET_LABEL, GOAL_LABEL } from "@/domain/types";
 import { CalorieCalendar } from "@/features/nutrition/CalorieCalendar";
 import { CalorieRing, MacroBars } from "@/features/nutrition/CalorieRing";
-import { CameraFab, FirstMealCard, StepsCard, WaterCard } from "@/features/nutrition/DailyCards";
+import { AddMealCard, CameraFab, FirstMealCard, StepsCard, WaterCard } from "@/features/nutrition/DailyCards";
 import { TargetEditor } from "@/features/nutrition/TargetEditor";
 import { msg, t } from "@/i18n";
 import { formatDate } from "@/lib/dates";
+import { AI_ENABLED } from "@/lib/features";
 import { usePhoneSteps } from "@/lib/pedometer";
 import { formatNumber, formatSigned } from "@/lib/units";
 import { space, useColors } from "@/theme";
@@ -31,8 +32,9 @@ const REASON_LABEL = {
 
 /**
  * Nutrición: el objetivo del día como un anillo que se llena con lo comido, los macros, el agua, los pasos
- * del móvil y el calendario de días cumplidos. Para registrar comida, el botón flotante de la cámara (o, sin
- * cámara, las opciones del día de hoy en el calendario). Ver docs/INTEGRACION-NUTRICION.md.
+ * del móvil y el calendario de días cumplidos. Para registrar comida, con la IA encendida, el botón flotante de la
+ * cámara (o las opciones del día de hoy en el calendario); sin IA, la tarjeta «Añadir comida» de arriba (código de
+ * barras, favoritas o a mano). Ver docs/INTEGRACION-NUTRICION.md y `lib/features.ts`.
  */
 export default function Nutrition() {
   const colors = useColors();
@@ -71,10 +73,13 @@ export default function Nutrition() {
     setMessage(result.ok ? { tone: "positive", text: t("Nuevo objetivo: unas {kcal} kcal al día.", { kcal: result.data.calories }) } : { tone: "danger", text: result.error });
   };
 
+  const fab = AI_ENABLED ? <CameraFab /> : undefined;
+  const addMeal = AI_ENABLED ? (day.hasPhotoMeal ? null : <FirstMealCard />) : <AddMealCard />;
+
   if (!target) {
     return (
-      <Screen tab title={t("Nutrición")} floating={<CameraFab />}>
-        {day.hasPhotoMeal ? null : <FirstMealCard />}
+      <Screen tab title={t("Nutrición")} floating={fab}>
+        {addMeal}
         <Card>
           <EmptyState title={t("Aún no hay objetivo nutricional")} action={<Button onPress={recalculate} loading={pending}>{t("Calcular ahora")}</Button>}>
             {t("Se calcula a partir de tu perfil y de tu último peso.")}
@@ -90,10 +95,10 @@ export default function Nutrition() {
   const canAdjust = decision.action === "increase" || decision.action === "decrease";
 
   return (
-    <Screen tab title={t("Nutrición")} floating={<CameraFab />}>
+    <Screen tab title={t("Nutrición")} floating={fab}>
       {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
 
-      {day.hasPhotoMeal ? null : <FirstMealCard />}
+      {addMeal}
 
       <Card>
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: space.sm }}>
@@ -163,7 +168,7 @@ export default function Nutrition() {
           </View>
         </Collapsible>
         <View style={{ marginTop: space.md, paddingTop: space.md, borderTopWidth: 1, borderTopColor: colors.line, gap: space.sm }}>
-          <Txt variant="small">{t("Al analizar una comida, la IA avisa si podría contener algo de lo que evitas (Perfil → Alimentación).")}</Txt>
+          {AI_ENABLED ? <Txt variant="small">{t("Al analizar una comida, la IA avisa si podría contener algo de lo que evitas (Perfil → Alimentación).")}</Txt> : null}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
             <Badge>{DIET_LABEL[profile.dietPreference]}</Badge>
             {profile.allergies.map((allergen) => (

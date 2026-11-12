@@ -7,6 +7,7 @@ import { Button, Notice, Txt } from "@/components/ui";
 import { mealPhotoDisplayUri } from "@/data/meal-photos";
 import { t } from "@/i18n";
 import { ApiError, apiErrorMessage, isRetryable } from "@/lib/api";
+import { AI_ENABLED } from "@/lib/features";
 import { radius, space, useColors } from "@/theme";
 import { emptyDraft, setMealDraft } from "./draft";
 
@@ -77,18 +78,20 @@ export function useManualMeal() {
 }
 
 /**
- * Los cuatro caminos para registrar una comida (y «a mano»). Se usa en Nutrición y, en la fase 6,
- * en Inicio.
+ * Los caminos para registrar una comida (y «a mano»). Foto y texto solo con la IA encendida
+ * (`lib/features.ts`). Se usa en Nutrición y, en la fase 6, en Inicio.
  */
 export function AddMealButtons() {
   const router = useRouter();
   const manual = useManualMeal();
   return (
     <View style={{ gap: space.sm }}>
-      <View style={{ flexDirection: "row", gap: space.sm }}>
-        <AddButton icon={Camera} label={t("Foto")} onPress={() => router.push({ pathname: "/comida/foto", params: { abrir: "camara" } })} />
-        <AddButton icon={PencilLine} label={t("Escribir")} onPress={() => router.push("/comida/texto")} />
-      </View>
+      {AI_ENABLED ? (
+        <View style={{ flexDirection: "row", gap: space.sm }}>
+          <AddButton icon={Camera} label={t("Foto")} onPress={() => router.push({ pathname: "/comida/foto", params: { abrir: "camara" } })} />
+          <AddButton icon={PencilLine} label={t("Escribir")} onPress={() => router.push("/comida/texto")} />
+        </View>
+      ) : null}
       <View style={{ flexDirection: "row", gap: space.sm }}>
         <AddButton icon={ScanBarcode} label={t("Código")} onPress={() => router.push("/comida/codigo")} />
         <AddButton icon={Star} label={t("Favoritas")} onPress={() => router.push("/comida/favoritas")} />

@@ -47,6 +47,7 @@ import {
 import { convertDraftUnits, type Draft } from "@/features/onboarding/draft";
 import { msg, t } from "@/i18n";
 import { COUNTRIES } from "@/lib/countries";
+import { AI_ENABLED } from "@/lib/features";
 import { lengthUnit, parseDecimal, weightUnit } from "@/lib/units";
 import { radius, space, useColors } from "@/theme";
 import { MeasureGuide } from "./MeasureGuide";
@@ -532,7 +533,7 @@ export function NutritionSection({ draft, update, brief = false }: SectionProps 
         <Field label={t("Tipo de alimentación")}>
           <OptionCards options={optionsOf(DIETS, DIET_LABEL)} value={draft.dietPreference} onChange={(dietPreference) => update({ dietPreference })} />
         </Field>
-        <Field label={t("Alergias e intolerancias")} optional hint={t("Al analizar una comida, la IA te avisará si podría contener alguno.")}>
+        <Field label={t("Alergias e intolerancias")} optional hint={AI_ENABLED ? t("Al analizar una comida, la IA te avisará si podría contener alguno.") : undefined}>
           <Chips options={optionsOf(ALLERGENS, ALLERGEN_LABEL)} values={draft.allergies} onChange={(allergies) => update({ allergies })} />
         </Field>
       </Gap>
@@ -549,7 +550,7 @@ export function NutritionSection({ draft, update, brief = false }: SectionProps 
       <Field label={t("Tipo de alimentación")}>
         <OptionCards options={optionsOf(DIETS, DIET_LABEL)} value={draft.dietPreference} onChange={(dietPreference) => update({ dietPreference })} />
       </Field>
-      <Field label={t("Alergias e intolerancias")} optional hint={t("Al analizar una comida, la IA te avisará si podría contener alguno.")}>
+      <Field label={t("Alergias e intolerancias")} optional hint={AI_ENABLED ? t("Al analizar una comida, la IA te avisará si podría contener alguno.") : undefined}>
         <Chips options={optionsOf(ALLERGENS, ALLERGEN_LABEL)} values={draft.allergies} onChange={(allergies) => update({ allergies })} />
       </Field>
       <Field label={t("Otras alergias, intolerancias o restricciones")} optional>

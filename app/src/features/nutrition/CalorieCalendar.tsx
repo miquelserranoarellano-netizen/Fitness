@@ -11,6 +11,7 @@ import { WEEKDAY_LABEL } from "@/domain/types";
 import { AddMealButtons, MealThumb } from "@/features/meals/components";
 import { t } from "@/i18n";
 import { listFoodEntries } from "@/integrations/nutrition/store";
+import { AI_ENABLED } from "@/lib/features";
 import { addDays, addMonths, formatDate, formatMonth, formatShortDate, formatTime, isoWeekday, monthEnd, monthStart, relativeDay, weekStart } from "@/lib/dates";
 import { formatNumber } from "@/lib/units";
 import { radius, space, tabular, useColors } from "@/theme";
@@ -247,9 +248,10 @@ function DayView({
           ))}
         </View>
       ) : (
-        <Txt variant="small">{isToday ? t("Aún no has registrado nada hoy. Usa el botón de la cámara de abajo para hacer una foto del plato.") : t("Este día no tiene comidas registradas.")}</Txt>
+        <Txt variant="small">{isToday && AI_ENABLED ? t("Aún no has registrado nada hoy. Usa el botón de la cámara de abajo para hacer una foto del plato.") : t("Este día no tiene comidas registradas.")}</Txt>
       )}
-      {isToday ? <AddMealButtons /> : null}
+      {/* Sin IA, los botones para añadir están arriba del todo en Nutrición (`AddMealCard`). */}
+      {isToday && AI_ENABLED ? <AddMealButtons /> : null}
     </View>
   );
 }

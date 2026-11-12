@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { Field, Input } from "@/components/form";
@@ -11,10 +11,16 @@ import { useAvoidList, useServerRequest } from "@/features/meals/hooks";
 import { t } from "@/i18n";
 import { MAX_TEXT_LENGTH } from "@/lib/api";
 import { getApi } from "@/lib/api-config";
+import { AI_ENABLED } from "@/lib/features";
 import { space } from "@/theme";
 
+/** Sin IA (`lib/features.ts`) esta pantalla no existe: quien llegue por la dirección vuelve a Nutrición. */
+export default function DescribeMealScreen() {
+  return AI_ENABLED ? <DescribeMeal /> : <Redirect href="/nutricion" />;
+}
+
 /** Registrar una comida escribiéndola («2 huevos fritos y una tostada»): la IA la interpreta. */
-export default function DescribeMeal() {
+function DescribeMeal() {
   const router = useRouter();
   const manual = useManualMeal();
   const avoid = useAvoidList();

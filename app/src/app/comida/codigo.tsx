@@ -12,6 +12,7 @@ import { useServerRequest } from "@/features/meals/hooks";
 import { t } from "@/i18n";
 import { ApiError } from "@/lib/api";
 import { getApi } from "@/lib/api-config";
+import { AI_ENABLED } from "@/lib/features";
 import { radius, space, useColors } from "@/theme";
 
 const BARCODE_TYPES = ["ean13", "ean8", "upc_a", "upc_e"] as const;
@@ -131,9 +132,11 @@ export default function BarcodeMeal() {
             {t("El código {codigo} no está en Open Food Facts o no tiene calorías. Puedes escribir la comida o añadirla a mano con los datos de la etiqueta.", { codigo: code })}
           </Notice>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-            <Button size="sm" variant="secondary" onPress={() => router.replace("/comida/texto")}>
-              {t("Escribirla")}
-            </Button>
+            {AI_ENABLED ? (
+              <Button size="sm" variant="secondary" onPress={() => router.replace("/comida/texto")}>
+                {t("Escribirla")}
+              </Button>
+            ) : null}
             <Button size="sm" variant="secondary" onPress={manual}>
               {t("Añadirla a mano")}
             </Button>

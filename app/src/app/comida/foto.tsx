@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { Camera, ImagePlus } from "lucide-react-native";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { View } from "react-native";
@@ -12,16 +12,22 @@ import { draftFromAnalysis, setMealDraft, type PickedPhoto } from "@/features/me
 import { useAvoidList, useServerRequest } from "@/features/meals/hooks";
 import { t } from "@/i18n";
 import { getApi } from "@/lib/api-config";
+import { AI_ENABLED } from "@/lib/features";
 import { preparePhotoForAnalysis } from "@/lib/photo-prep";
 import { radius, space, useColors } from "@/theme";
 
 const PICKER_OPTIONS: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.85, exif: false };
 
+/** Sin IA (`lib/features.ts`) esta pantalla no existe: quien llegue por la dirección vuelve a Nutrición. */
+export default function PhotoMealScreen() {
+  return AI_ENABLED ? <PhotoMeal /> : <Redirect href="/nutricion" />;
+}
+
 /**
  * Registrar una comida con una foto: se hace (o se elige), se manda al servidor para reconocer los
  * alimentos y se pasa a revisarla. Con `?abrir=camara` la cámara se abre al entrar.
  */
-export default function PhotoMeal() {
+function PhotoMeal() {
   const colors = useColors();
   const router = useRouter();
   const manual = useManualMeal();

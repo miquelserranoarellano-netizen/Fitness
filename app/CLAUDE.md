@@ -43,6 +43,9 @@ cambia en cada SDK: consulta la documentación de la v58 antes de usar una API) 
   `apiErrorMessage` y se ofrece «Reintentar» solo si `isRetryable`. La clave de Anthropic nunca va en la app
   (ni en `EXPO_PUBLIC_*`): vive en `server/.env`. Ningún secreto va en `EXPO_PUBLIC_*` (en la web se lee): el código
   de acceso de cada persona se escribe en `servidor.tsx` y se guarda con `src/lib/access-code.ts`.
+- **IA apagada.** `AI_ENABLED` (`src/lib/features.ts`, `EXPO_PUBLIC_AI=on` para encenderla) esconde todo lo de IA:
+  foto y texto de comidas, botón de la cámara, permiso, cupo y avisos de alergias. Sin ella, las comidas entran por
+  código de barras, favoritas o a mano. Si añades algo que use la IA, ponlo detrás de `AI_ENABLED`.
 - **Web (prueba en el VPS).** Diálogos con `appAlert` (`src/lib/alert.ts`), nunca `Alert.alert`, que en la web no
   hace nada. Lo que solo existe en el móvil (`expo-file-system`, cámara de códigos) se esconde con `isWeb`
   (`src/lib/web.ts`). La web publicada tiene una CSP estricta (`deploy/Caddyfile`): nada de scripts o recursos de

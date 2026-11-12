@@ -33,6 +33,7 @@ import {
 import { msg, t } from "@/i18n";
 import { appAlert } from "@/lib/alert";
 import { formatDate, today } from "@/lib/dates";
+import { AI_ENABLED } from "@/lib/features";
 import { clearAppCaches } from "@/lib/temp-files";
 import { downloadJson, downloadText, isWeb } from "@/lib/web";
 import { radius, space, useColors } from "@/theme";
@@ -103,16 +104,26 @@ export default function ProfileScreen() {
       <DataCard />
 
       <Card>
-        <CardHeader title={t("Privacidad e inteligencia artificial")} />
+        <CardHeader title={AI_ENABLED ? t("Privacidad e inteligencia artificial") : t("Privacidad")} />
         <View style={{ gap: space.sm }}>
-          <Txt variant="small">
-            {t("Tus datos se guardan solo en este teléfono, dentro de la app: no hay cuenta. Nada más sale del dispositivo salvo que tú exportes tus datos o analices una comida.")}
-          </Txt>
-          <Txt variant="small">
-            {t(
-              "Al analizar una comida, su foto (reducida y sin ubicación) o su texto, junto con las alergias y alimentos que evitas, van a tu servidor, que usa la IA de Anthropic para reconocer los alimentos; el servidor no guarda las fotos. El entrenamiento, el objetivo de calorías y todas las recomendaciones salen de reglas explícitas sobre tus datos.",
-            )}
-          </Txt>
+          {AI_ENABLED ? (
+            <>
+              <Txt variant="small">
+                {t("Tus datos se guardan solo en este teléfono, dentro de la app: no hay cuenta. Nada más sale del dispositivo salvo que tú exportes tus datos o analices una comida.")}
+              </Txt>
+              <Txt variant="small">
+                {t(
+                  "Al analizar una comida, su foto (reducida y sin ubicación) o su texto, junto con las alergias y alimentos que evitas, van a tu servidor, que usa la IA de Anthropic para reconocer los alimentos; el servidor no guarda las fotos. El entrenamiento, el objetivo de calorías y todas las recomendaciones salen de reglas explícitas sobre tus datos.",
+                )}
+              </Txt>
+            </>
+          ) : (
+            <Txt variant="small">
+              {t(
+                "Tus datos se guardan solo en este dispositivo: no hay cuenta. Nada sale de aquí salvo que exportes tus datos o busques un producto por su código de barras. El entrenamiento, el objetivo de calorías y todas las recomendaciones salen de reglas explícitas sobre tus datos.",
+              )}
+            </Txt>
+          )}
           <Txt variant="small">{t("Esta aplicación no hace diagnósticos médicos. Si tienes dolor o una lesión, consulta a un profesional sanitario.")}</Txt>
         </View>
       </Card>

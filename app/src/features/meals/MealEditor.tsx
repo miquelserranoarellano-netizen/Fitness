@@ -11,6 +11,7 @@ import { useMutation } from "@/data/provider";
 import { msg, t } from "@/i18n";
 import type { FoodDataSource } from "@/integrations/nutrition/contract";
 import { today } from "@/lib/dates";
+import { AI_ENABLED } from "@/lib/features";
 import { discardTempFile } from "@/lib/temp-files";
 import { formatNumber } from "@/lib/units";
 import { radius, space, useColors } from "@/theme";
@@ -236,9 +237,9 @@ export function MealEditor({
       </Card>
 
       <Txt variant="tiny">
-        {t(
-          "Las cifras son estimaciones: la IA calcula los gramos a ojo y las bases de datos dan valores medios. Si conoces el peso, corrígelo.",
-        )}
+        {AI_ENABLED
+          ? t("Las cifras son estimaciones: la IA calcula los gramos a ojo y las bases de datos dan valores medios. Si conoces el peso, corrígelo.")
+          : t("Las cifras son estimaciones: las bases de datos dan valores medios. Si conoces el peso, corrígelo.")}
       </Txt>
 
       {existing ? (

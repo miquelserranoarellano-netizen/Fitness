@@ -11,6 +11,10 @@ COPY app/ ./
 # El servidor está en el mismo dominio, en /api (lo reparte Caddy). Va dentro de la web: nada secreto aquí.
 ARG EXPO_PUBLIC_API_URL=/api
 ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
+# IA apagada: la app no enseña nada de análisis con IA (app/src/lib/features.ts). Para encenderla, «on» aquí y
+# ANTHROPIC_API_KEY en el .env (cada análisis gasta tokens de esa clave).
+ARG EXPO_PUBLIC_AI=off
+ENV EXPO_PUBLIC_AI=${EXPO_PUBLIC_AI}
 RUN npx expo export --platform web --output-dir dist
 # La portada no se compila: HTML, CSS y el logo.
 COPY deploy/landing/ /landing/

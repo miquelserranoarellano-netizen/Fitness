@@ -2,7 +2,8 @@ import { router } from "expo-router";
 import { Camera, Droplet, Footprints, Minus, Plus } from "lucide-react-native";
 import { Pressable, View } from "react-native";
 import { PickerField, rangeOptions } from "@/components/Picker";
-import { Button, Card, ProgressBar, Txt } from "@/components/ui";
+import { Button, Card, CardHeader, ProgressBar, Txt } from "@/components/ui";
+import { AddMealButtons } from "@/features/meals/components";
 import { t } from "@/i18n";
 import type { PedometerStatus } from "@/lib/pedometer";
 import { formatNumber } from "@/lib/units";
@@ -27,6 +28,16 @@ export function FirstMealCard() {
           {t("Hacer la foto")}
         </Button>
       </View>
+    </Card>
+  );
+}
+
+/** Sin IA (`AI_ENABLED`): los caminos para añadir una comida, arriba del todo en Nutrición. */
+export function AddMealCard() {
+  return (
+    <Card>
+      <CardHeader title={t("Añadir comida")} />
+      <AddMealButtons />
     </Card>
   );
 }

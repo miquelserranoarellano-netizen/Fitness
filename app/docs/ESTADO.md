@@ -3,6 +3,16 @@
 Última actualización: 11 de noviembre de 2026 · Lista para subir a Hostinger (prueba web de un mes) · Fusión con
 SnapCal en curso (fase 5 de 10 hecha).
 
+## IA apagada (11/11/2026)
+
+A petición de Miquel, para no gastar tokens de Anthropic con quien pruebe la app:
+- `src/lib/features.ts` (`AI_ENABLED`, apagada salvo `EXPO_PUBLIC_AI=on`). Sin IA no aparecen la foto ni el texto de
+  comidas (esas pantallas redirigen a Nutrición), ni el botón flotante de la cámara, ni el permiso y el cupo de
+  Servidor, ni los avisos de alergias de la IA. Nutrición lleva arriba «Añadir comida» (código de barras,
+  favoritas, a mano). Textos de bienvenida, Perfil, Más y Servidor sin IA, traducidos (7 nuevos).
+- Servidor sin `ANTHROPIC_API_KEY` (`.env.example`, `DESPLIEGUE.md`). La portada ya no habla de IA.
+- **Comprobado:** `npm run check`, `npm run i18n` y la web compilada en el navegador.
+
 ## Portada de IKYNDO y Hostinger (11/11/2026)
 
 - **Portada** (`../deploy/landing/`): página de presentación de IKYNDO con el logo y el aspecto de la app (colores

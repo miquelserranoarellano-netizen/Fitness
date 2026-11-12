@@ -69,6 +69,9 @@ Sin problemas nuevos que corregir. Comprobado:
   «Riesgos aceptados»). `expo-doctor` no se pudo ejecutar (falla la propia herramienta al instalarse con `npx`).
 - **Configuración:** `docker-compose.yml`, imágenes, Caddyfile, `.env.example` y scripts del VPS coherentes con la
   portada en el dominio y la app en `app.`. Lo único sin probar sigue siendo Docker y Caddy en el VPS real.
+- **IA apagada** (después de la auditoría): la app no enseña nada de IA (`AI_ENABLED`) y el `.env` va sin
+  `ANTHROPIC_API_KEY`, así que nada sale hacia Anthropic ni se gasta nada. Del dispositivo solo sale el número de
+  los códigos de barras que se buscan. El permiso, el cupo y los límites siguen en el código para cuando se encienda.
 
 Ya estaba bien hecho: la clave de Anthropic solo vive en el servidor; las respuestas se validan con Zod en los dos
 lados; los errores no enseñan detalles internos; las fotos se reducen y pierden los metadatos (ubicación incluida)

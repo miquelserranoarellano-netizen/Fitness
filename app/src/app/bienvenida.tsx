@@ -12,6 +12,7 @@ import { useImportCopy } from "@/features/backup/import-copy";
 import { emptyDraft, onboardingFromDraft, validateStep, type Draft, type StepId } from "@/features/onboarding/draft";
 import { AvailabilitySection, ExperienceSection, GoalsSection, HabitsSection, NutritionSection, PersonalSection } from "@/features/profile/sections";
 import { msg, t, tn } from "@/i18n";
+import { AI_ENABLED } from "@/lib/features";
 import { lengthUnit, weightUnit } from "@/lib/units";
 import { isWeb } from "@/lib/web";
 import { radius, space, useColors } from "@/theme";
@@ -157,9 +158,13 @@ function Intro() {
         <View style={{ flex: 1, gap: 6 }}>
           <Txt style={{ fontWeight: "600" }}>{isWeb ? t("Tus datos se quedan en este navegador") : t("Tus datos se quedan en este teléfono")}</Txt>
           <Txt variant="small">
-            {t(
-              "Vas a indicar datos de salud (peso y medidas). Se guardan solo en este dispositivo: no hay cuenta. Lo único que sale del teléfono son las comidas que decidas analizar (su foto o su texto, con las alergias que hayas indicado), que van a tu servidor para reconocer los alimentos. Puedes exportar o borrar tus datos desde Perfil cuando quieras. Al continuar aceptas guardarlos aquí con ese fin.",
-            )}
+            {AI_ENABLED
+              ? t(
+                  "Vas a indicar datos de salud (peso y medidas). Se guardan solo en este dispositivo: no hay cuenta. Lo único que sale del teléfono son las comidas que decidas analizar (su foto o su texto, con las alergias que hayas indicado), que van a tu servidor para reconocer los alimentos. Puedes exportar o borrar tus datos desde Perfil cuando quieras. Al continuar aceptas guardarlos aquí con ese fin.",
+                )
+              : t(
+                  "Vas a indicar datos de salud (peso y medidas). Se guardan solo en este dispositivo: no hay cuenta. Lo único que sale de aquí es el número de los códigos de barras que busques, para encontrar el producto. Puedes exportar o borrar tus datos desde Perfil cuando quieras. Al continuar aceptas guardarlos aquí con ese fin.",
+                )}
           </Txt>
           <Txt variant="small">{t("Esta aplicación no hace diagnósticos médicos. Si tienes dolor o una lesión, consulta a un profesional sanitario.")}</Txt>
         </View>
