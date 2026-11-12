@@ -1,10 +1,12 @@
 import * as Crypto from "expo-crypto";
 import { useFocusEffect } from "expo-router";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { DatabaseBusy } from "@/components/database-busy";
 import { openAppDb } from "@/db/expo";
 import type { Db } from "@/db/types";
 import { t } from "@/i18n";
 import { appAlert } from "@/lib/alert";
+import { isDatabaseBusyError, waitForDatabaseTurn } from "@/lib/database-turn";
 import { setIdGenerator } from "@/lib/id";
 
 type DataContext = { db: Db; version: number; invalidate: () => void };
@@ -14,21 +16,30 @@ const Context = createContext<DataContext | null>(null);
 /**
  * Abre la base de datos del teléfono al arrancar y la comparte con todas las pantallas. `version`
  * cambia tras cada escritura (`invalidate`) y hace que las pantallas abiertas vuelvan a leer sus datos.
+ * En la web, antes espera su turno: los datos solo pueden estar abiertos en una pestaña (`lib/database-turn.ts`).
  */
 export function DataProvider({ children, fallback, onReady }: { children: ReactNode; fallback: ReactNode; onReady?: () => void }) {
   const [db, setDb] = useState<Db | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  const [waiting, setWaiting] = useState(false);
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
     setIdGenerator(() => Crypto.randomUUID());
     let cancelled = false;
-    openAppDb()
+    waitForDatabaseTurn(() => {
+      if (!cancelled) setWaiting(true);
+    })
+      .then(() => openAppDb())
       .then((opened) => {
-        if (!cancelled) setDb(opened);
+        if (cancelled) return;
+        setWaiting(false);
+        setDb(opened);
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause : new Error(String(cause)));
+        if (cancelled) return;
+        setWaiting(false);
+        setError(cause instanceof Error ? cause : new Error(String(cause)));
       });
     return () => {
       cancelled = true;
@@ -36,13 +47,14 @@ export function DataProvider({ children, fallback, onReady }: { children: ReactN
   }, []);
 
   useEffect(() => {
-    if (db || error) onReady?.();
-  }, [db, error, onReady]);
+    if (db || error || waiting) onReady?.();
+  }, [db, error, waiting, onReady]);
 
   const invalidate = useCallback(() => setVersion((value) => value + 1), []);
 
+  if (error && isDatabaseBusyError(error)) return <DatabaseBusy failed />;
   if (error) throw error;
-  if (!db) return <>{fallback}</>;
+  if (!db) return waiting ? <DatabaseBusy /> : <>{fallback}</>;
   return <Context.Provider value={{ db, version, invalidate }}>{children}</Context.Provider>;
 }
 

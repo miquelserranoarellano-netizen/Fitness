@@ -3,6 +3,18 @@
 Última actualización: 12 de noviembre de 2026 · Lista para subir a Hostinger (prueba web de un mes) · Fusión con
 SnapCal en curso (fase 5 de 10 hecha).
 
+## Una sola pestaña con los datos en la web (12/11/2026)
+
+Fallo visto en el iPhone: «Algo ha fallado · The operation failed for an unknown transient reason». En la web,
+expo-sqlite abre la base de datos (OPFS) en exclusiva y no la suelta hasta que la pestaña se cierra; con la app
+abierta en otra pestaña (aunque esté en segundo plano), la nueva no podía abrirla.
+- `src/lib/database-turn.ts`: antes de abrir los datos, cada pestaña pide turno con Web Locks. Si otra lo tiene,
+  sale «IKYNDO está abierta en otra pestaña» (`components/database-busy.tsx`) con «Usar aquí», que le pide a la otra
+  que ceda (pasa a `public/otra-pestana.html` y suelta los archivos); y al cerrar la otra, esta se abre sola. Si aun
+  así falla, un aviso claro con «Recargar» en lugar del error en crudo. En el móvil nativo no hace nada.
+- **Comprobado** con la web compilada y un servidor como el del VPS: segunda pestaña → aviso; «Usar aquí» → la nueva
+  abre y la vieja pasa a la página de aviso; cerrar la que tiene los datos → la que espera se abre sola.
+
 ## Selectores de cristal (12/11/2026)
 
 `src/components/Picker.tsx` (edad, altura, peso, agua, pasos…): tarjeta flotante translúcida con fondo desenfocado
