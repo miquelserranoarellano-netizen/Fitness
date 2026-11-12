@@ -3,20 +3,17 @@
 Última actualización: 12 de noviembre de 2026 · Lista para subir a Hostinger (prueba web de un mes) · Fusión con
 SnapCal en curso (fase 5 de 10 hecha).
 
-## Presentación y app juntas (12/11/2026)
+## Presentación en HTML y app en /app (12/11/2026)
 
-A petición de Miquel, todo en una sola dirección y con el mismo estilo:
-- La presentación de IKYNDO es la primera pantalla de la app en la web (`src/features/presentation/`, desde
-  `app/index.tsx`): quien entra sin datos la ve y «Empezar» lleva al cuestionario; con datos, se entra directo al
-  inicio (también desde el icono de la pantalla de inicio). En el móvil nativo no aparece. Usa las piezas y colores
-  de la app, sigue su tema y su idioma (46 textos nuevos, traducidos), con el logo en `assets/images/logo-ikyndo.jpg`.
-- **Comprobado:** `npm run check` (161 pruebas), `npm run i18n` y la web compilada servida con las cabeceras de Caddy:
-  la presentación sale en `/` a quien no tiene datos, sin errores ni bloqueos de la CSP y sin salirse de la pantalla
-  en el móvil, y «Empezar» lleva al cuestionario. **Sin ver en el navegador:** la entrada directa al inicio con
-  datos (es la misma comprobación de perfil que ya había).
-- Fuera la portada estática (`deploy/landing/`) y el subdominio `app.`: Caddy con un solo sitio (`tudominio.com` y
-  `/api`), un solo registro A en el DNS. Guía, scripts, `.env.example` y documentos al día.
-- La sección «Portada de IKYNDO y Hostinger» de abajo describe la versión anterior (portada aparte).
+A petición de Miquel: una presentación en HTML y la app aparte, instalable en el móvil, en una sola dirección.
+- `tudominio.com/` → presentación en HTML (`../deploy/landing/`, con el aspecto de la app y sin JavaScript).
+  `tudominio.com/app/` → la app, compilada con `experiments.baseUrl: "/app"` (`app.json`); manifiesto con `start_url`
+  y `scope` en `/app/`, así que instalada (iPhone y Android) abre la app. `/api` → servidor. Un solo registro A.
+- Un rato antes se probó la presentación como pantalla de la app (`src/features/presentation/`): retirada, con sus
+  46 textos. La sección «Portada de IKYNDO y Hostinger» de abajo habla de `app.tudominio.com`: ya no se usa.
+- **Comprobado** con la web compilada y un servidor local que imita el Caddyfile: presentación sin errores, «Entrar
+  en la app» → `/app/` → cuestionario, SQLite con aislamiento entre orígenes, manifiesto, iconos y `/api`, y
+  direcciones internas (`/app/servidor`) al recargar. `npm run check` e `npm run i18n` en verde.
 
 ## IA apagada (11/11/2026)
 

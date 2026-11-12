@@ -46,7 +46,7 @@ La app lo busca en el mismo ordenador, puerto 3000; para cambiarlo, `app/.env.ex
 
 ## En internet (VPS)
 
-La web de IKYNDO (presentación y app, juntas en `tudominio.com`) y el servidor van en un VPS con Docker y HTTPS
+La web de IKYNDO (presentación en HTML en `tudominio.com` y app en `tudominio.com/app`) y el servidor van en un VPS con Docker y HTTPS
 automático (Caddy): `docker compose up -d --build` en la raíz, con el `.env` de [`.env.example`](.env.example), o
 desde el PC con `deploy\subir.ps1`. Paso a paso para Hostinger, incluido el camino al App Store, en
 [`DESPLIEGUE.md`](DESPLIEGUE.md). Revisión de seguridad en [`SEGURIDAD.md`](SEGURIDAD.md).

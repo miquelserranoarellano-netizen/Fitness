@@ -1,0 +1,558 @@
+/*
+ * Portada de IKYNDO con el aspecto de la app: los colores son los de `app/src/theme.ts` (claro por defecto,
+ * oscuro si el sistema lo pide), y las tarjetas, botones, avisos y viñetas copian los de
+ * `app/src/components/ui.tsx`. Sin fuentes ni recursos de fuera (CSP del Caddyfile).
+ */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --surface: #f6f7f5;
+  --raised: #ffffff;
+  --line: rgba(18, 21, 19, 0.07);
+  --line-strong: rgba(18, 21, 19, 0.16);
+  --fg: #121513;
+  --muted: #545a56;
+  --subtle: #666c68;
+  --accent: #1d6b45;
+  --accent-ink: #ffffff;
+  --accent-fg: #1d6b45;
+  --accent-faint: rgba(29, 107, 69, 0.05);
+  --accent-soft: rgba(29, 107, 69, 0.09);
+  --accent-line: rgba(29, 107, 69, 0.35);
+  --neutral-bg: rgba(18, 21, 19, 0.05);
+  --header-bg: rgba(255, 255, 255, 0.86);
+  --tile-shadow: 0 1px 2px rgba(18, 21, 19, 0.08), 0 24px 48px -24px rgba(18, 21, 19, 0.45);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #08090a;
+    --surface: #101113;
+    --raised: #17181b;
+    --line: rgba(255, 255, 255, 0.07);
+    --line-strong: rgba(255, 255, 255, 0.14);
+    --fg: #f2f3f5;
+    --muted: #a0a4ab;
+    --subtle: #80848c;
+    --accent: #c2f25c;
+    --accent-ink: #0c1203;
+    --accent-fg: #c2f25c;
+    --accent-faint: rgba(194, 242, 92, 0.06);
+    --accent-soft: rgba(194, 242, 92, 0.12);
+    --accent-line: rgba(194, 242, 92, 0.35);
+    --neutral-bg: rgba(255, 255, 255, 0.06);
+    --header-bg: rgba(8, 9, 10, 0.86);
+    --tile-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 60px -28px rgba(194, 242, 92, 0.35);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.wrap {
+  width: min(1080px, 100% - 32px);
+  margin-inline: auto;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Etiqueta pequeña en mayúsculas, como las de la app. */
+.label {
+  margin-bottom: 10px;
+  color: var(--subtle);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Iconos de trazo (los mismos de lucide que usa la app). */
+.i {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Cabecera */
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--header-bg);
+  -webkit-backdrop-filter: saturate(1.4) blur(12px);
+  backdrop-filter: saturate(1.4) blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.top .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 60px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+/* El símbolo del logo (la K con el corredor), recortado de la imagen completa. */
+.brand-mark {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #000;
+}
+
+.brand-mark img {
+  position: absolute;
+  top: -6px;
+  left: -13px;
+  width: 62px;
+  max-width: none;
+}
+
+.brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.brand:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--accent-fg);
+  outline-offset: 2px;
+}
+
+/* Botones: los de la app (12 px de radio, borde de 1 px, texto en 600). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.btn:hover {
+  opacity: 0.88;
+}
+
+.btn:active {
+  opacity: 0.8;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-secondary {
+  background: var(--raised);
+  border-color: var(--line-strong);
+  color: var(--fg);
+}
+
+.btn-sm {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.btn-lg {
+  height: 52px;
+  padding: 0 20px;
+}
+
+/* Viñetas con punto de acento, como `Bullets` en la app. */
+.dots {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dots li {
+  position: relative;
+  padding-left: 18px;
+}
+
+.dots li::before {
+  content: "";
+  position: absolute;
+  top: 0.62em;
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-fg);
+}
+
+/* Portada */
+.hero {
+  padding: 64px 0 56px;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+  gap: 48px;
+}
+
+h1 {
+  margin-bottom: 16px;
+  font-size: clamp(2rem, 4.2vw, 2.9rem);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.lead {
+  max-width: 34em;
+  color: var(--muted);
+  font-size: 1.125rem;
+  line-height: 1.55;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* El logo, como el icono de una app. */
+.logo-tile {
+  width: min(400px, 100%);
+  margin-inline: auto;
+  border-radius: 22%;
+  box-shadow: var(--tile-shadow);
+}
+
+/* Secciones */
+section {
+  padding: 56px 0;
+  scroll-margin-top: 44px;
+}
+
+.section-head {
+  max-width: 40em;
+  margin-bottom: 28px;
+}
+
+h2 {
+  font-size: clamp(1.45rem, 2.6vw, 1.9rem);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.section-head .muted {
+  margin-top: 12px;
+}
+
+h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+  line-height: 1.33;
+  letter-spacing: -0.01em;
+}
+
+/* Tarjetas: las de la app (gris cálido, borde fino, 20 px de radio). */
+.card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.card-highlight {
+  border-color: var(--accent-line);
+  background: var(--accent-faint);
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card .dots {
+  margin-top: 16px;
+  font-size: 15px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-fg);
+}
+
+.icon .i {
+  width: 22px;
+  height: 22px;
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Privacidad: filas como las de los ajustes de la app. */
+.privacy {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  align-items: start;
+  gap: 40px;
+}
+
+.rows {
+  margin: 0;
+  padding: 4px 20px;
+  list-style: none;
+}
+
+.rows li {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+}
+
+.rows li + li {
+  border-top: 1px solid var(--line);
+}
+
+.rows .i {
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.rows strong {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.rows span {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* Llamada final */
+.cta {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.cta > .muted {
+  max-width: 32em;
+  margin: 12px auto 24px;
+}
+
+.notices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 760px;
+  margin: 32px auto 0;
+  text-align: left;
+}
+
+/* Avisos: los `Notice` neutros de la app. */
+.notice {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--neutral-bg);
+}
+
+.notice strong {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.notice span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Pie */
+footer {
+  padding: 28px 0 40px;
+  border-top: 1px solid var(--line);
+  color: var(--subtle);
+  font-size: 13px;
+}
+
+footer .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 32px;
+}
+
+footer strong {
+  color: var(--fg);
+  letter-spacing: 0.06em;
+}
+
+footer .wrap > p:last-child {
+  max-width: 46em;
+}
+
+/* Móvil */
+@media (max-width: 860px) {
+  .hero {
+    padding: 28px 0 40px;
+  }
+
+  .hero-grid,
+  .privacy {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-grid {
+    gap: 28px;
+  }
+
+  .hero-art {
+    order: -1;
+  }
+
+  .logo-tile {
+    width: min(240px, 66%);
+  }
+
+  .grid-3,
+  .notices {
+    grid-template-columns: 1fr;
+  }
+
+  section {
+    padding: 40px 0;
+  }
+
+  .privacy {
+    gap: 4px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .cta {
+    padding: 32px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .actions .btn {
+    flex: 1 1 100%;
+  }
+
+  .top .btn-sm {
+    padding: 0 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .btn {
+    transition: none;
+  }
+}

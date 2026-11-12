@@ -1,8 +1,9 @@
-# Caddy en el VPS: HTTPS automático con Let's Encrypt, la web de IKYNDO y /api hacia el servidor. Todo en una sola
-# dirección: la web es la app, que enseña la presentación a quien entra sin datos y el inicio a quien ya la usa.
-# DOMAIN y ACME_EMAIL salen del .env de la raíz (ver DESPLIEGUE.md):
-#   DOMAIN          → la web (presentación + app) y, en /api, el servidor
-#   www.DOMAIN      → redirige a DOMAIN
+# Caddy en el VPS: HTTPS automático con Let's Encrypt y una sola dirección (DOMAIN, del .env; ver DESPLIEGUE.md):
+#   DOMAIN/        → presentación de IKYNDO en HTML (deploy/landing/)
+#   DOMAIN/app/    → la app (Expo para web, compilada con experiments.baseUrl "/app"); se instala desde aquí
+#   DOMAIN/api/    → el servidor (contenedor api)
+#   www.DOMAIN     → redirige a DOMAIN
+# Escucha en el 80 solo para redirigir a HTTPS y conseguir el certificado; todo va por el 443.
 {
 	email {$ACME_EMAIL}
 	# Sin interfaz de administración: la configuración solo cambia reconstruyendo la imagen.
@@ -51,15 +52,26 @@
 		}
 	}
 
-	# La web: una sola página, así que cualquier ruta que no sea un archivo carga index.html.
-	handle {
-		root * /srv
+	# La app, en /app/. Una sola página: cualquier ruta que no sea un archivo carga index.html.
+	redir /app /app/
+	handle_path /app/* {
+		root * /srv/app
 		@static path /_expo/static/* /assets/*
 		header @static Cache-Control "public, max-age=31536000, immutable"
 		@page not path /_expo/static/* /assets/*
 		header @page Cache-Control "no-cache"
 		try_files {path} /index.html
 		# Las versiones ya comprimidas al construir la imagen (Brotli o gzip, la que acepte el navegador).
+		file_server {
+			precompressed br gzip
+		}
+	}
+
+	# La presentación: HTML, CSS y el logo, sin JavaScript.
+	handle {
+		root * /srv/landing
+		header Cache-Control "no-cache"
+		try_files {path} /index.html
 		file_server {
 			precompressed br gzip
 		}

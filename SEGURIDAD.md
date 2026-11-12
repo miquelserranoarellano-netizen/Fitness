@@ -47,10 +47,10 @@ Revisión del 10 de noviembre de 2026, antes de poner la app en un VPS para la p
 
 ### Presentación de IKYNDO (11 y 12 de noviembre de 2026)
 
-La presentación empezó como una portada estática aparte (con la app en `app.<dominio>`). El 12/11 pasó a ser la
-primera pantalla de la propia app en la web (`app/src/features/presentation/`): una sola dirección (`<dominio>`) y un
-solo bloque en el Caddyfile, con las cabeceras de siempre (CSP estricta, COOP/COEP, HSTS, `noindex`). No añade
-scripts ni recursos de fuera: son las mismas piezas de la app. `www.<dominio>` redirige a `<dominio>`.
+Presentación en HTML (`deploy/landing/`, sin JavaScript) en `<dominio>/` y la app en `<dominio>/app/`, en un solo
+bloque del Caddyfile con las cabeceras de siempre (CSP estricta, COOP/COEP, HSTS, `noindex`) para todo. La
+presentación comparte origen con la app, pero no lleva scripts, así que no puede tocar sus datos. `www.<dominio>`
+redirige a `<dominio>`. Probado en local con un servidor que imita el Caddyfile.
 
 ### Auditoría antes de subir a Hostinger (11 de noviembre de 2026)
 

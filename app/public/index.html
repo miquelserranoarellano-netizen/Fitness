@@ -6,9 +6,10 @@
     <title>%WEB_TITLE%</title>
     <!-- Versión de prueba: que no aparezca en buscadores. -->
     <meta name="robots" content="noindex, nofollow" />
-    <!-- Para añadirla a la pantalla de inicio (en el iPhone así Safari no borra los datos). -->
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <!-- Para añadirla a la pantalla de inicio (en el iPhone así Safari no borra los datos). La app vive en /app
+         (experiments.baseUrl de app.json); en / está la presentación de IKYNDO. -->
+    <link rel="manifest" href="/app/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="IKYNDO" />
@@ -70,7 +71,7 @@
     <noscript>Hace falta activar JavaScript para usar esta app.</noscript>
     <div id="root">
       <div class="arranque" role="status" aria-live="polite">
-        <img src="/icons/icon-192.png" alt="" />
+        <img src="/app/icons/icon-192.png" alt="" />
         <div class="rueda"></div>
         <span>Cargando IKYNDO…</span>
       </div>

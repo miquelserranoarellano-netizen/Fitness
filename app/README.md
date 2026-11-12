@@ -7,7 +7,7 @@
 Versión para móvil de Smart Fitness Coach: entrenador personal de hipertrofia con
 rutina generada por reglas, modo entrenamiento, seguimiento corporal, revisiones semanales y mensuales,
 análisis de puntos fuertes y débiles y evaluación de bloques. Se publica como web en el VPS de Hostinger
-(`tudominio.com`, con la presentación de IKYNDO como primera pantalla; ver [`../DESPLIEGUE.md`](../DESPLIEGUE.md)),
+(`tudominio.com/app`, con la presentación de IKYNDO en `tudominio.com`; ver [`../DESPLIEGUE.md`](../DESPLIEGUE.md)),
 sin cuenta: los datos se guardan en el navegador o en el teléfono (SQLite).
 
 La **nutrición está a medias a propósito**: la app calcula el objetivo diario (calorías y macros) y si hay que

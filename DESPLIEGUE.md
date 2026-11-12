@@ -1,17 +1,19 @@
 # Despliegue en un VPS de Hostinger
 
-Guía para poner IKYNDO en internet durante la prueba (presentación y app web, juntas) y dejar el servidor listo
+Guía para poner IKYNDO en internet durante la prueba (presentación y app web) y dejar el servidor listo
 para la versión del App Store. Se hace una vez; después, actualizar es un comando.
 
 ```
 Navegador / móvil ──HTTPS 443──► Caddy (certificado, cabeceras de seguridad)
-                                    └── tudominio.com ──► la web de IKYNDO: presentación + app
-                                          └── /api ──► servidor Node (solo red interna de Docker) ──► Open Food Facts, USDA
+                                    └── tudominio.com
+                                          ├── /      ──► presentación de IKYNDO (HTML, deploy/landing/)
+                                          ├── /app/  ──► la app (se instala en el móvil desde aquí)
+                                          └── /api/  ──► servidor Node (solo red interna de Docker) ──► Open Food Facts, USDA
 ```
 
-**Todo junto, en una sola dirección y un solo puerto (443).** La presentación es la primera pantalla de la propia
-app en la web, con sus mismos colores, tema e idioma: quien entra sin datos la ve y con «Empezar» pasa al
-cuestionario; quien ya usa la app entra directo al inicio. El servidor y la app comparten dominio (`/api`).
+**Una sola dirección y un solo VPS.** Caddy escucha en el 443 (HTTPS), y en el 80 solo para redirigir a HTTPS y
+conseguir el certificado. «Entrar en la app» lleva de la presentación a `/app/`; desde ahí se añade a la pantalla de
+inicio del móvil (iPhone y Android) y el icono abre directamente la app.
 
 **Sin IA:** la app va con la IA apagada (`app/src/lib/features.ts`) y el servidor sin clave de Anthropic, así que no
 se gasta ni un token: las comidas se añaden por código de barras, desde favoritas o a mano. Para encenderla más
@@ -66,7 +68,7 @@ Después, el paso 7 (probar desde el móvil). Los pasos 1 a 6 de abajo son el ca
 | Qué | Para qué |
 | --- | --- |
 | VPS de Hostinger **KVM 1** (1 vCPU, 4 GB de RAM) con **Ubuntu 24.04** | Sobra para la prueba: hacen falta 2 GB de RAM para compilar la web con soltura; con 1 GB funciona, pero lento (el script añade memoria de intercambio) |
-| Un **dominio** propio, p. ej. `tudominio.com` | La web (presentación y app) va en el dominio: el certificado de HTTPS va asociado a ese nombre |
+| Un **dominio** propio, p. ej. `tudominio.com` | La presentación y la app (`/app`) van en el dominio: el certificado de HTTPS va asociado a ese nombre |
 | Clave gratuita de **USDA** ([alta](https://fdc.nal.usda.gov/api-key-signup)) | Cifras de alimentos genéricos |
 | Acceso al repositorio de GitHub (es privado) | Descargar el código en el VPS |
 
@@ -179,12 +181,12 @@ curl https://tudominio.com/api/health
 
 ## 7. Probar desde el móvil
 
-1. Abre `https://tudominio.com`: sale la presentación de IKYNDO. Pulsa **«Empezar»**, haz el cuestionario y entra
-   en **Más → Servidor y código de acceso**: pega tu código y pulsa «Guardar y comprobar». Debe decir «Código de
-   miquel».
-2. **iPhone: añade la app a la pantalla de inicio** (Safari → Compartir → «Añadir a pantalla de inicio») y úsala
-   desde ese icono: con datos, abre directamente el inicio. Si se usa solo como pestaña de Safari, Safari puede
-   borrar sus datos tras 7 días sin abrirla. Android: Chrome → menú → «Instalar aplicación».
+1. Abre `https://tudominio.com`: sale la presentación de IKYNDO. Pulsa **«Entrar en la app»** (lleva a
+   `https://tudominio.com/app/`), haz el cuestionario y entra en **Más → Servidor y código de acceso**: pega tu
+   código y pulsa «Guardar y comprobar». Debe decir «Código de miquel».
+2. **Instálala en el móvil desde la app** (`/app/`), no desde la presentación. iPhone: Safari → Compartir →
+   «Añadir a pantalla de inicio» (si se usa solo como pestaña, Safari puede borrar sus datos tras 7 días sin
+   abrirla). Android: Chrome → menú → «Instalar aplicación». El icono abre directamente la app.
 3. **Copia de seguridad**: Perfil → Tus datos → Exportar mis datos, de vez en cuando. Los datos viven solo en ese
    navegador.
 
@@ -193,8 +195,8 @@ cada comida: eso queda para la app del móvil.
 
 **Qué probar el primer día** (en el móvil, desde el icono de la pantalla de inicio):
 
-- [ ] La presentación abre con candado (HTTPS), en el idioma del móvil, y «Empezar» lleva al cuestionario.
-- [ ] Tras el cuestionario, volver a abrir `https://tudominio.com` (o el icono) entra directo al inicio.
+- [ ] La presentación abre con candado (HTTPS) y «Entrar en la app» lleva al cuestionario.
+- [ ] Instalada en la pantalla de inicio (iPhone y Android), el icono abre la app directamente en el inicio.
 - [ ] Cuestionario completo → informe inicial → Inicio con la rutina de hoy.
 - [ ] Empezar el entrenamiento, apuntar 2 o 3 series y terminarlo.
 - [ ] Más → Servidor y código de acceso: pegar el código y ver «Código de …».

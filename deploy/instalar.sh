@@ -74,5 +74,5 @@ docker compose up -d --build
 docker image prune -f >/dev/null
 docker compose ps
 echo
-echo "Listo: https://${dominio} (presentación y app)."
+echo "Listo: https://${dominio} (presentación) y https://${dominio}/app/ (app)."
 echo "Códigos de acceso: grep ACCESS_CODES /opt/fitness/.env"

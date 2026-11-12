@@ -6,8 +6,8 @@ Fusión de Smart Fitness Coach (Miquel) y SnapCal (Marc) en una sola app de móv
 - `server/`: el servidor de SnapCal modernizado (Express, Claude con salida estructurada, USDA y Open Food Facts).
   La clave de Anthropic solo vive en `server/.env`, nunca en la app. Pruebas: `npm test` dentro de `server/`.
 - Despliegue: `docker-compose.yml` (raíz), `deploy/` (Caddy, imagen de la web, scripts del VPS y `subir.ps1` para
-  subirla desde el PC) y `DESPLIEGUE.md` (VPS de Hostinger). Todo en una sola dirección: la web es la app, que en
-  la web enseña primero la presentación de IKYNDO (`app/src/features/presentation/`) a quien entra sin datos.
+  subirla desde el PC) y `DESPLIEGUE.md` (VPS de Hostinger). Una sola dirección: en `/` la presentación de IKYNDO
+  en HTML (`deploy/landing/`, sin JavaScript) y en `/app` la app (`experiments.baseUrl` de `app/app.json`).
   Acceso al servidor con códigos por persona (`ACCESS_CODES`), nunca con secretos dentro de la app. `SEGURIDAD.md`
   recoge la revisión de seguridad: ponla al día si cambias algo de lo que cuenta.
 - `originales/`: copias intactas de las dos apps. Solo de consulta: no se modifican.
