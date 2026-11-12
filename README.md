@@ -4,6 +4,8 @@ App de móvil (Expo / React Native) que une **Smart Fitness Coach** (Miquel), un
 con rutina por reglas, modo entrenamiento, seguimiento de peso y medidas y revisiones, con **SnapCal**
 (Marc), que registra la comida con fotos y calcula calorías y macros.
 
+> Para colaborar (Marc y su Claude): [`COLABORAR.md`](COLABORAR.md).
+>
 > En desarrollo: la fusión va por fases. El plan y las decisiones están en [`fusion/PLAN-FUSION.md`](fusion/PLAN-FUSION.md)
 > y el estado de cada fase en [`app/docs/ESTADO.md`](app/docs/ESTADO.md).
 

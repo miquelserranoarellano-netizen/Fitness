@@ -10,6 +10,8 @@ Fusión de Smart Fitness Coach (Miquel) y SnapCal (Marc) en una sola app de móv
   en HTML (`deploy/landing/`, sin JavaScript) y en `/app` la app (`experiments.baseUrl` de `app/app.json`).
   Acceso al servidor con códigos por persona (`ACCESS_CODES`), nunca con secretos dentro de la app. `SEGURIDAD.md`
   recoge la revisión de seguridad: ponla al día si cambias algo de lo que cuenta.
+- Proyecto de dos personas (Miquel y Marc, cada uno con su Claude): cómo colaborar en `COLABORAR.md`. Cambios en
+  ramas con pull request hacia `main`, y `app/docs/ESTADO.md` al día.
 - `originales/`: copias intactas de las dos apps. Solo de consulta: no se modifican.
 - `fusion/`: el encargo (`PROMPT-FUSION-APPS.md`), los dos resúmenes y el plan con las decisiones (`PLAN-FUSION.md`).
 
