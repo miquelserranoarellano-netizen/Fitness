@@ -1,10 +1,10 @@
 /*
- * Portada de IKYNDO con el aspecto de la app: los colores son los de `app/src/theme.ts` (claro por defecto,
- * oscuro si el sistema lo pide), y las tarjetas, botones, avisos y viñetas copian los de
- * `app/src/components/ui.tsx`. Sin fuentes ni recursos de fuera (CSP del Caddyfile).
+ * Portada de IKYNDO con el aspecto de la app: los colores son los del tema claro de `app/src/theme.ts` (siempre en
+ * claro, fondo blanco), y las tarjetas, botones, avisos y viñetas copian los de `app/src/components/ui.tsx`. Sin
+ * fuentes ni recursos de fuera (CSP del Caddyfile).
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --bg: #ffffff;
   --surface: #f6f7f5;
   --raised: #ffffff;
@@ -25,28 +25,6 @@
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #08090a;
-    --surface: #101113;
-    --raised: #17181b;
-    --line: rgba(255, 255, 255, 0.07);
-    --line-strong: rgba(255, 255, 255, 0.14);
-    --fg: #f2f3f5;
-    --muted: #a0a4ab;
-    --subtle: #80848c;
-    --accent: #c2f25c;
-    --accent-ink: #0c1203;
-    --accent-fg: #c2f25c;
-    --accent-faint: rgba(194, 242, 92, 0.06);
-    --accent-soft: rgba(194, 242, 92, 0.12);
-    --accent-line: rgba(194, 242, 92, 0.35);
-    --neutral-bg: rgba(255, 255, 255, 0.06);
-    --header-bg: rgba(8, 9, 10, 0.86);
-    --tile-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 60px -28px rgba(194, 242, 92, 0.35);
-  }
 }
 
 *,
