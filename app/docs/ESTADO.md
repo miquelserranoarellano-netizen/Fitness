@@ -3,6 +3,12 @@
 Última actualización: 12 de noviembre de 2026 · Lista para subir a Hostinger (prueba web de un mes) · Fusión con
 SnapCal en curso (fase 5 de 10 hecha).
 
+## Selectores de cristal (12/11/2026)
+
+`src/components/Picker.tsx` (edad, altura, peso, agua, pasos…): tarjeta flotante translúcida con fondo desenfocado
+(`expo-blur`, incluido en Expo Go; en Android sin desenfoque, translúcida), barrita de arrastre, la opción elegida
+centrada en una píldora con ✓ y vibración suave al elegir en el móvil. Probado en el navegador.
+
 ## Presentación en HTML y app en /app (12/11/2026)
 
 A petición de Miquel: una presentación en HTML y la app aparte, instalable en el móvil, en una sola dirección.
